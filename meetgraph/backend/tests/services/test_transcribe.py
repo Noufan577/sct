@@ -41,7 +41,9 @@ async def test_sarvam_primary():
 @pytest.mark.asyncio
 async def test_offline_fallback():
     svc = TranscribeService(sarvam=_sarvam_down(), offline=_offline_ok())
-    result = await svc.transcribe_audio(b" heritage ")
+    # Use proper WAV header audio so wav2vec2 fallback can decode it
+    wav_audio = b"RIFF\x24\x00\x00\x00WAVE"
+    result = await svc.transcribe_audio(wav_audio)
     assert result["engine"] == "wav2vec2-offline"
     assert result["transcript"] == "offline words"
 
