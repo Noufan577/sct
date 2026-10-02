@@ -36,19 +36,47 @@ def C(person, text, status, speaker, ts, quote, deadline=None):
 
 
 SCENARIO = [
-    ("demo-m1", "Sprint planning", [
-        C("Rahul", "Prepare the budget report", "COMMITTED", "Rahul", 12.5,
-          "I will prepare the budget report by Friday.", deadline="Friday"),
-        C("Priya", "Book flight tickets to Delhi", "COMMITTED", "Priya", 45.0,
-          "I will book the flight tickets today."),
+    ("demo-m1", "Project Kickoff", [
+        C("Rahul", "Set up the initial code repository", "COMMITTED", "Rahul", 10.0,
+          "I'm Rahul, I will set up the initial code repository by tomorrow.", deadline="Tomorrow"),
+        C("Priya", "Draft the UI mockups", "COMMITTED", "Priya", 25.0,
+          "I'll start drafting the UI mockups in Figma today."),
     ]),
-    ("demo-m2", "Mid-sprint check", [
-        C("Rahul", "Prepare budget report for Q3", "OPEN", "Rahul", 8.0,
-          "Budget report almost done aanu, oru correction bakki undu, will finish soon."),
+    ("demo-m2", "Design Sync", [
+        C("Priya", "Finalize the color palette", "COMMITTED", "Priya", 5.0,
+          "I will finalize the color palette this evening."),
+        C("Rahul", "Set up the initial code repository", "OPEN", "Rahul", 45.0,
+          "Repo structure setup is almost done aanu, just pushing it now."),
     ]),
-    ("demo-m3", "Sprint review", [
-        C("Rahul", "Prepare the budget report", "COMPLETED", "Rahul", 20.0,
-          "The budget report is done, shared with the team."),
+    ("demo-m3", "Architecture Review", [
+        C("Rahul", "Set up the initial code repository", "COMPLETED", "Rahul", 12.0,
+          "The repository is live and access is granted to everyone."),
+        C("Arjun", "Provision the AWS database", "COMMITTED", "Arjun", 30.0,
+          "This is Arjun, I'll provision the AWS database for our backend."),
+    ]),
+    ("demo-m4", "Mid-week Standup", [
+        C("Priya", "Draft the UI mockups", "COMPLETED", "Priya", 15.0,
+          "Mockups are finished and ready for review."),
+        C("Arjun", "Provision the AWS database", "OPEN", "Arjun", 22.0,
+          "Database creation in progress, waiting for IAM permissions."),
+    ]),
+    ("demo-m5", "Bug Bash Planning", [
+        C("Rahul", "Fix the login authentication bug", "COMMITTED", "Rahul", 40.0,
+          "I will fix the login authentication bug before Friday."),
+        C("Arjun", "Provision the AWS database", "COMPLETED", "Arjun", 55.0,
+          "AWS DB is finally up and running, credentials shared."),
+    ]),
+    ("demo-m6", "Pre-Launch Sync", [
+        C("Priya", "Prepare the slide deck for demo", "COMMITTED", "Priya", 18.0,
+          "I'll prepare the slide deck for the hackathon demo."),
+        C("Rahul", "Fix the login authentication bug", "OPEN", "Rahul", 33.0,
+          "Login bug fixing start cheythu, it should be done tonight."),
+    ]),
+    ("demo-m7", "Hackathon Go-Live", [
+        C("Rahul", "Fix the login authentication bug", "COMPLETED", "Rahul", 5.0,
+          "Login bug is fully resolved. We are good to go!"),
+        C("Priya", "Prepare the slide deck for demo", "COMPLETED", "Priya", 10.0,
+          "Slide deck is complete. Let's win this!"),
     ]),
 ]
 

@@ -19,6 +19,14 @@ class Settings(BaseSettings):
     WAV2VEC2_MODEL: str = "facebook/wav2vec2-base-960h"
     
     DATABASE_URL: str = "sqlite:///./meetgraph.db"
+    GEMINI_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
+    
+    SMTP_SERVER: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
 
     class Config:
         env_file = ".env"

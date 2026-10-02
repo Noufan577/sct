@@ -271,6 +271,7 @@
     <option value="en">English</option>
     <option value="manglish">Manglish</option>
     <option value="ml">മലയാളം</option>
+    <option value="hi">हिंदी</option>
   </select>
   <button class="ghost" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
 </div>
@@ -332,9 +333,9 @@
 
 <!-- Speaker Identities -->
 <div class="card reveal">
-  <div class="card-header"><span class="card-icon">👤</span><h2>Speaker Identities</h2></div>
-  <p class="hint">Resolved and confirmed speaker → person mappings. Confirm identities to improve commitment attribution across meetings.</p>
-  <button onclick="loadIdentities()" class="ghost" style="margin-bottom:0.6rem">Refresh</button>
+  <div class="card-header"><span class="card-icon">👤</span><h2 data-i18n="identities"></h2></div>
+  <p class="hint" data-i18n="identities_hint"></p>
+  <button onclick="loadIdentities()" class="ghost" style="margin-bottom:0.6rem" data-i18n="refresh"></button>
   <div id="identity-list">…</div>
 </div>
 
@@ -350,22 +351,22 @@
 
 <!-- What changed since? -->
 <div class="card reveal">
-  <div class="card-header"><span class="card-icon">🔔</span><h2>What changed since?</h2></div>
-  <p class="hint">Select a meeting to see all commitment changes, new items, and slipped deadlines since that point.</p>
+  <div class="card-header"><span class="card-icon">🔔</span><h2 data-i18n="since_title"></h2></div>
+  <p class="hint" data-i18n="since_hint"></p>
   <div class="row">
-    <select id="since-meeting"><option value="">Choose a meeting…</option></select>
-    <button onclick="loadSince()">Show Changes</button>
+    <select id="since-meeting"><option value="" data-i18n="choose_meeting"></option></select>
+    <button onclick="loadSince()" data-i18n="show_changes"></button>
   </div>
   <div id="since-list"></div>
 </div>
 
 <!-- Pre-meeting Brief -->
 <div class="card reveal">
-  <div class="card-header"><span class="card-icon">📋</span><h2>Pre-meeting Brief</h2></div>
-  <p class="hint">A snapshot of open commitments and drift to review before your next meeting.</p>
+  <div class="card-header"><span class="card-icon">📋</span><h2 data-i18n="brief_title"></h2></div>
+  <p class="hint" data-i18n="brief_hint"></p>
   <div class="row">
-    <select id="brief-meeting"><option value="">Choose a meeting…</option></select>
-    <button onclick="loadBrief()">Generate Brief</button>
+    <select id="brief-meeting"><option value="" data-i18n="choose_meeting"></option></select>
+    <button onclick="loadBrief()" data-i18n="gen_brief"></button>
   </div>
   <div id="brief-output"></div>
 </div>
@@ -398,6 +399,7 @@
       <option value="en">English</option>
       <option value="ml">മലയാളം</option>
       <option value="manglish">Manglish</option>
+      <option value="hi">हिंदी</option>
     </select>
     <input type="text" id="recap-person" data-i18n-ph="person_ph">
     <button onclick="recap()" data-i18n="recap_btn"></button>
@@ -449,7 +451,12 @@ en: {
   open_now: "Needs Attention", open_hint: "Open commitments across all meetings — stuff that still needs doing.",
   sync: "Meetily Sync", sync_hint: "Check Meetily for new meetings. Import brings them into MeetGraph.",
   check_meetily: "Check Meetily", import_btn: "Import", fetched: "Imported", unfetched: "New",
-  graph: "Relation Graph", graph_hint: "Drag nodes. Click one to see its connections."
+  graph: "Relation Graph", graph_hint: "Drag nodes. Click one to see its connections.",
+  identities: "Speaker Identities", identities_hint: "Resolved and confirmed speaker mappings.", refresh: "Refresh",
+  no_identities: "No identities resolved yet.", confirmed: "Confirmed", conf_high: "High", conf_med: "Medium", conf_low: "Low",
+  confirm: "confirm", edit_name: "edit name", name_enter: "Name + Enter",
+  since_title: "What changed since?", since_hint: "Select a meeting to see changes.", choose_meeting: "Choose a meeting…", show_changes: "Show Changes",
+  brief_title: "Pre-meeting Brief", brief_hint: "A snapshot of open commitments.", gen_brief: "Generate Brief"
 },
 manglish: {
   subtitle: "Meetily-ku vendiyulla memory layer. Paranja ella promises-um meetings-il track cheyyum.",
@@ -469,7 +476,12 @@ manglish: {
   open_now: "Shraddha venam", open_hint: "Ella meetings-ilum open aayi kidakkunnavaye.",
   sync: "Meetily Sync", sync_hint: "Meetily-il puthiya meetings undo ennu nokku.",
   check_meetily: "Meetily nokku", import_btn: "Import cheyyu", fetched: "Imported", unfetched: "Puthiyath",
-  graph: "Graph", graph_hint: "Nodes-ne valichu nokku."
+  graph: "Graph", graph_hint: "Nodes-ne valichu nokku.",
+  identities: "Speaker Identities", identities_hint: "Confirm cheytha speaker mappings.", refresh: "Refresh",
+  no_identities: "Identities onnum kitiyilla.", confirmed: "Confirmed", conf_high: "High", conf_med: "Medium", conf_low: "Low",
+  confirm: "confirm", edit_name: "edit name", name_enter: "Name + Enter",
+  since_title: "Enthokke maari?", since_hint: "Oru meeting select cheythal maattangal kaanam.", choose_meeting: "Meeting select cheyyu…", show_changes: "Maattangal kaanikk",
+  brief_title: "Pre-meeting Brief", brief_hint: "Open commitments-nte cheriya roopam.", gen_brief: "Brief Undakku"
 },
 ml: {
   subtitle: "മീറ്റ്‌ലിക്ക് വേണ്ടിയുള്ള മെമ്മറി ലെയർ. പ്രതിബദ്ധതകൾ ട്രാക്ക് ചെയ്യുക.",
@@ -488,7 +500,35 @@ ml: {
   open_now: "ശ്രദ്ധ ആവശ്യം", open_hint: "Open commitments.",
   sync: "Meetily Sync", sync_hint: "Meetily-ൽ പുതിയ മീറ്റിംഗ് ഉണ്ടോ?",
   check_meetily: "Meetily പരിശോധിക്കുക", import_btn: "ഇറക്കുമതി", fetched: "ഇറക്കുമതി ചെയ്ത", unfetched: "പുതിയ",
-  graph: "ഗ്രാഫ്", graph_hint: "നോഡ് ക്ലിക്ക് ചെയ്യുക."
+  graph: "ഗ്രാഫ്", graph_hint: "നോഡ് ക്ലിക്ക് ചെയ്യുക.",
+  identities: "സ്പീക്കർ ഐഡൻ്റിറ്റികൾ", identities_hint: "സ്പീക്കർ മാപ്പിംഗുകൾ സ്ഥിരീകരിച്ചു.", refresh: "പുതുക്കുക",
+  no_identities: "ഐഡൻ്റിറ്റികൾ ലഭ്യമല്ല.", confirmed: "Confirmed", conf_high: "High", conf_med: "Medium", conf_low: "Low",
+  confirm: "സ്ഥിരീകരിക്കുക", edit_name: "പേര് തിരുത്തുക", name_enter: "പേര് + Enter",
+  since_title: "എന്തൊക്കെ മാറി?", since_hint: "ഒരു മീറ്റിംഗ് തിരഞ്ഞെടുക്കുക.", choose_meeting: "ഒരു മീറ്റിംഗ് തിരഞ്ഞെടുക്കുക…", show_changes: "മാറ്റങ്ങൾ കാണിക്കുക",
+  brief_title: "പ്രീ-മീറ്റിംഗ് ബ്രീഫ്", brief_hint: "ഓപ്പൺ കമ്മിറ്റ്‌മെൻ്റുകളുടെ സംഗ്രഹം.", gen_brief: "സംഗ്രഹം ഉണ്ടാക്കുക"
+},
+hi: {
+  subtitle: "मीटिग्राफ — हर मीटिंग की याददाश्त। हर वादे को याद रखें।",
+  meetings: "मीटिंग्स", meetings_hint: "मीटिंग चुनें और उसकी डिटेल्स देखें।",
+  timeline: "क्रॉस-मीटिंग टाइमलाइन", show_timeline: "टाइमलाइन दिखाएं",
+  ask: "इतिहास पूछें", ask_ph: "कुछ भी पूछें…", ask_btn: "पूछें", thinking: "सोच रहा हूँ…",
+  recap: "अपनी भाषा में रीकैप", recap_btn: "रीकैप बनाएं", action_items: "एक्शन आइटम",
+  evidence: "सबूत", transcribe: "ऑडियो ट्रांसक्राइब करें", transcribe_btn: "ट्रांसक्राइब करें", transcribing: "ट्रांसक्राइब हो रहा है…",
+  mark_done: "पूरा हो गया", mark_slipped: "छूट गया", try_asking: "यह पूछ कर देखें:",
+  welcome_title: "पहली बार यहाँ आए हैं? 30-सेकंड का टूर लें।",
+  step1: "1. मीटिंग्स इंपोर्ट करें।", step2: "2. हर जवाब के साथ सबूत।", step3: "3. भाषा बदलें।",
+  got_it: "समझ गया, इसे छुपाएं", no_meetings: "कोई मीटिंग नहीं।", no_threads: "कोई थ्रेड नहीं।",
+  no_commitments: "कोई कमिटमेंट नहीं।", person_ph: "व्यक्ति (वैकल्पिक)",
+  stats_meetings: "मीटिंग्स", stats_commitments: "कमिटमेंट्स", stats_open: "ओपन",
+  open_now: "ध्यान दें", open_hint: "ओपन कमिटमेंट्स।",
+  sync: "मीटिग्राफ सिंक", sync_hint: "नई मीटिंग्स जांचें।",
+  check_meetily: "चेक करें", import_btn: "इंपोर्ट करें", fetched: "इंपोर्ट हो गया", unfetched: "नया",
+  graph: "रिलेशन ग्राफ", graph_hint: "नोड पर क्लिक करें।",
+  identities: "वक्ता की पहचान", identities_hint: "पुष्टि किए गए स्पीकर मैपिंग।", refresh: "रिफ्रेश करें",
+  no_identities: "कोई पहचान नहीं मिली।", confirmed: "Confirmed", conf_high: "High", conf_med: "Medium", conf_low: "Low",
+  confirm: "पुष्टि करें", edit_name: "नाम बदलें", name_enter: "नाम + Enter",
+  since_title: "क्या बदलाव हुए?", since_hint: "बदलाव देखने के लिए एक मीटिंग चुनें।", choose_meeting: "एक मीटिंग चुनें…", show_changes: "बदलाव दिखाएं",
+  brief_title: "प्री-मीटिंग ब्रीफ", brief_hint: "ओपन कमिटमेंट्स का स्नैपशॉट।", gen_brief: "ब्रीफ बनाएं"
 }};
 let LANG = localStorage.getItem("mg-lang") || "en";
 function t(k) { return (STR[LANG] && STR[LANG][k]) || STR.en[k] || k; }
@@ -741,19 +781,47 @@ async function loadBrief() {
     html += `<div class="row"><span class="badge OPEN">${data.open_count} open</span> <span class="badge SLIPPED">${data.slipped_count} slipped</span></div>`;
     if (data.open_commitments && data.open_commitments.length) {
       html += `<div class="since-section"><h3>📌 Open Commitments</h3>`;
-      html += data.open_commitments.map(c =>
-        `<div class="openitem"><span class="badge ${c.status}">${c.status}</span><div><b>${c.person}</b> — ${c.commitment} <span class="meta">${c.meeting_title || ""}</span></div></div>`
-      ).join("") + `</div>`;
+      html += data.open_commitments.map(c => {
+        const commEsc = c.commitment.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+        const meetEsc = (c.meeting_title || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+        return `<div class="openitem"><span class="badge ${c.status}">${c.status}</span><div><b>${c.person}</b> — ${c.commitment} <span class="meta">${c.meeting_title || ""}</span> <button class="link" onclick="remindPersonInline(this, '${c.person}', '${commEsc}', '${meetEsc}')">📩 Remind</button></div></div>`;
+      }).join("") + `</div>`;
     }
     if (data.slipped_deadlines && data.slipped_deadlines.length) {
       html += `<div class="since-section"><h3>⚠️ Slipped Deadlines</h3>`;
-      html += data.slipped_deadlines.map(d =>
-        `<div class="openitem drift-item"><span class="tag-drift">SLIPPED</span><div><b>${d.person}</b> — ${d.commitment} <span class="meta drift-arrow">was ${d.original_deadline} → now ${d.current_deadline}</span></div></div>`
-      ).join("") + `</div>`;
+      html += data.slipped_deadlines.map(d => {
+        const commEsc = d.commitment.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+        return `<div class="openitem drift-item"><span class="tag-drift">SLIPPED</span><div><b>${d.person}</b> — ${d.commitment} <span class="meta drift-arrow">was ${d.original_deadline} → now ${d.current_deadline}</span> <button class="link" onclick="remindPersonInline(this, '${d.person}', '${commEsc}', '')">📩 Remind</button></div></div>`;
+      }).join("") + `</div>`;
     }
     html += `</div>`;
     box.innerHTML = html;
   } catch(e) { box.innerHTML = `<span class="err">${e.message}</span>`; }
+}
+function remindPersonInline(btn, person, commitment, meetingTitle) {
+  const input = document.createElement("input");
+  input.type = "email";
+  input.placeholder = "Email + Enter";
+  input.style = "width: 120px; padding: 2px 5px; font-size: 12px; margin-left: 5px; border-radius: 4px; border: 1px solid var(--border);";
+  input.onkeydown = async function(e) {
+      if (e.key === 'Enter' && this.value.trim()) {
+          this.disabled = true;
+          try {
+            await api("/api/notifications/remind", {
+              method: "POST", headers: {"Content-Type": "application/json"},
+              body: JSON.stringify({ person_name: person, email_address: this.value.trim(), task_description: commitment, meeting_title: meetingTitle })
+            });
+            const span = document.createElement("span");
+            span.className = "meta"; span.innerHTML = " ✓ Sent";
+            this.parentNode.replaceChild(span, this);
+          } catch(err) {
+            alert("Error: " + err.message);
+            this.disabled = false;
+          }
+      }
+  };
+  btn.parentNode.replaceChild(input, btn);
+  input.focus();
 }
 
 // ═══════════════════════════════ Speaker Identities ════════════════════
@@ -762,18 +830,18 @@ async function loadIdentities() {
   box.innerHTML = t("thinking");
   try {
     const ids = await api("/api/identities");
-    if (!ids.length) { box.innerHTML = `<span class="meta">No identities resolved yet. Import meetings to detect speakers.</span>`; return; }
+    if (!ids.length) { box.innerHTML = `<span class="meta">${t("no_identities")}</span>`; return; }
     box.innerHTML = ids.map(i =>
       `<div class="openitem">
         <span class="badge ${i.confirmed ? "DONE" : i.confidence > 0.7 ? "COMMITTED" : "OPEN"}">
-          ${i.confirmed ? "Confirmed" : i.confidence > 0.7 ? "High" : i.confidence > 0.3 ? "Medium" : "Low"}
+          ${i.confirmed ? t("confirmed") : i.confidence > 0.7 ? t("conf_high") : i.confidence > 0.3 ? t("conf_med") : t("conf_low")}
         </span>
         <div>
           <b>${i.speaker_label}</b> → ${i.person_name}
           <span class="meta"> · ${i.method || "unknown"} · conf: ${(i.confidence * 100).toFixed(0)}%</span>
           ${i.evidence_text ? `<div class="evidence hidden" data-ev>"${i.evidence_text}"</div>` : ""}
-          ${!i.confirmed ? `<button class="link" onclick="confirmIdentity(${i.id}, '${i.person_name}')">✓ confirm</button>
-          <button class="link" onclick="promptConfirmIdentity(${i.id})" style="color:var(--muted)">✎ edit name</button>` : `<span class="meta"> ✓ confirmed</span>`}
+          ${!i.confirmed ? `<button class="link" onclick="confirmIdentity(${i.id}, '${i.person_name}')">✓ ${t("confirm")}</button>
+          <button class="link" onclick="editNameInline(${i.id}, this)" style="color:var(--muted)">✎ ${t("edit_name")}</button>` : `<span class="meta"> ✓ ${t("confirmed")}</span>`}
         </div>
       </div>`
     ).join("");
@@ -788,9 +856,18 @@ async function confirmIdentity(id, name) {
     loadIdentities(); loadTimeline();
   } catch(e) { alert("Error: " + e.message); }
 }
-function promptConfirmIdentity(id) {
-  const name = prompt("Enter the correct person name:");
-  if (name && name.trim()) confirmIdentity(id, name.trim());
+function editNameInline(id, btn) {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = t("name_enter");
+  input.style = "width: 100px; padding: 2px 5px; font-size: 12px; margin-left: 5px; border-radius: 4px; border: 1px solid var(--border);";
+  input.onkeydown = function(e) {
+      if (e.key === 'Enter' && this.value.trim()) {
+          confirmIdentity(id, this.value.trim());
+      }
+  };
+  btn.parentNode.replaceChild(input, btn);
+  input.focus();
 }
 
 // ═══════════════════════════════ Ask ════════════════════════════════
@@ -832,7 +909,7 @@ async function transcribe() {
   try {
     const fd = new FormData();
     fd.append("file", f);
-    const r = await api("/api/transcribe", {method: "POST", body: fd});
+    const r = await api("/api/transcribe?language_code=" + encodeURIComponent(LANG), {method: "POST", body: fd});
     box.innerHTML = `<p><span class="badge llm">${r.engine}</span> <span class="meta">${r.language_code}</span></p><p>${r.transcript || "(empty)"}</p>`;
   } catch(e) { box.innerHTML = `<span class="err">Error: ${e.message}</span>`; }
 }

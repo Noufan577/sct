@@ -27,7 +27,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(Exception, global_exception_handler)
 
-    from app.api.routes import meetings, db_meetings, db_commitments, timeline, query, transcribe, recap, graph, sync, identities, intel
+    from app.api.routes import meetings, db_meetings, db_commitments, timeline, query, transcribe, recap, graph, sync, identities, intel, notifications
     app.include_router(meetings.router)
     app.include_router(db_meetings.router)
     app.include_router(db_commitments.router)
@@ -39,6 +39,7 @@ def create_app() -> FastAPI:
     app.include_router(sync.router)
     app.include_router(identities.router)
     app.include_router(intel.router)
+    app.include_router(notifications.router)
 
     @app.get("/", include_in_schema=False)
     def index():

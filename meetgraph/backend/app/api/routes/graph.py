@@ -19,9 +19,13 @@ def get_graph(
     Optionally filtered to one person (case-insensitive)."""
     try:
         items = DBRepository(db).get_all_commitments()
-    except Exception:
+    except Exception as e:
+        print(f"DB Error: {e}")
         raise HTTPException(status_code=500, detail="Database error occurred")
     try:
         return build_graph(items, person=person)
-    except Exception:
+    except Exception as e:
+        print(f"Graph Error: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to build graph")

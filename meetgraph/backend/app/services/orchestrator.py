@@ -29,10 +29,12 @@ async def process_meeting(
 
     # 2b. Resolve speaker labels to persistent people BEFORE extraction,
     #     so commitment owners/evidence carry real names.
+    from app.integrations.ollama.client import OllamaClient
     prior = repo.get_confirmed_identity_map()
-    resolved = resolve_speakers(
+    resolved = await resolve_speakers(
         [{"id": s.segment_id, "speaker": s.speaker, "text": s.text} for s in normalized.segments],
         prior_confirmed=prior,
+        ollama_client=OllamaClient()
     )
     repo.save_speaker_identities(meeting_id, resolved)
     for s in normalized.segments:
@@ -49,6 +51,21 @@ async def process_meeting(
     
     if commitments:
         repo.save_commitments(meeting_id, commitments)
+        
+        # 5. Retroactively update speaker identities if LLM inferred names
+        inferred_map = {}
+        for c in commitments:
+            if c.person and c.evidence and c.evidence.speaker and c.person != c.evidence.speaker:
+                # E.g. c.person = "Eric", c.evidence.speaker = "24"
+                inferred_map[c.evidence.speaker] = {
+                    "person": c.person,
+                    "confidence": 0.85,
+                    "evidence_segment_id": c.evidence.segment_id,
+                    "evidence_text": c.evidence.text,
+                    "method": "llm_inferred"
+                }
+        if inferred_map:
+            repo.save_speaker_identities(meeting_id, inferred_map)
         
     return {
         "meeting_id": meeting_id,

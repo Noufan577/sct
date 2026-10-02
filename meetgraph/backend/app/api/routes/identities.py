@@ -34,12 +34,17 @@ def list_identities(meeting_id: Optional[str] = None, repo: DBRepository = Depen
         raise HTTPException(status_code=500, detail="Database error occurred")
 
 
+from pydantic import BaseModel
+
+class ConfirmIdentityRequest(BaseModel):
+    person_name: str
+
 @router.post("/{identity_id}/confirm")
-def confirm_identity(identity_id: int, body: dict, repo: DBRepository = Depends(_repo)):
+def confirm_identity(identity_id: int, req: ConfirmIdentityRequest, repo: DBRepository = Depends(_repo)):
     """Manually confirm a speaker → person mapping. Confirmed mappings are
     reused globally for the same speaker label in future meetings."""
-    name = (body or {}).get("person_name")
-    if not isinstance(name, str) or not name.strip():
+    name = req.person_name
+    if not name.strip():
         raise HTTPException(status_code=422, detail="person_name is required")
     try:
         row = repo.confirm_speaker_identity(identity_id, name.strip())
