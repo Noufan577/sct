@@ -1,0 +1,43 @@
+# Environment & Secrets
+.env
+**/.env
+*.env
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+
+# Python Virtual Environments & Caches
+.venv/
+venv/
+**/.venv/
+**/venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+**/*.pyc
+.pytest_cache/
+**/.pytest_cache/
+
+# Node / JS
+node_modules/
+**/node_modules/
+dist/
+build/
+
+# Logs & temp files
+*.log
+**/*.log
+qw_recap_tmp.txt
+check_identities_tmp.py
+**/check_identities_tmp.py
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

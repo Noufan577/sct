@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MeetGraph — Never lose a commitment</title>
+<meta name="description" content="MeetGraph is a private, evidence-backed memory layer for Meetily. Track commitments, decisions, and people across every meeting.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8f5f1; --card: #ffffff; --text: #1a1625; --muted: #6e6880;
+    --border: #e8e1d4; --accent: #5b4bd6; --accent2: #9d4edd;
+    --accent3: #e8643a; --accent-text: #ffffff;
+    --ev-bg: #f3efe8; --hover: #f0ebe1;
+    --shadow: 0 4px 32px rgba(90, 70, 160, 0.09);
+    --shadow-lg: 0 8px 48px rgba(90, 70, 160, 0.15);
+    --grad: linear-gradient(135deg, #5b4bd6, #9d4edd);
+    --grad-warm: linear-gradient(135deg, #e8643a, #d63b6e);
+    --grad-success: linear-gradient(135deg, #22c55e, #16a34a);
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --radius: 18px; --radius-sm: 10px;
+  }
+  [data-theme="dark"] {
+    --bg: #0f0d1a; --card: #1a1729; --text: #edeafc; --muted: #9990b8;
+    --border: #2a2440; --accent: #9d8cff; --accent2: #c77dff;
+    --accent-text: #0f0d1a; --ev-bg: #201d35; --hover: #201d35;
+    --shadow: 0 4px 32px rgba(0,0,0,0.5);
+    --shadow-lg: 0 8px 48px rgba(0,0,0,0.6);
+    --grad: linear-gradient(135deg, #9d8cff, #c77dff);
+    --grad-warm: linear-gradient(135deg, #ff7a50, #ff4d8b);
+    --grad-success: linear-gradient(135deg, #4ade80, #22c55e);
+  }
+
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg); color: var(--text);
+    max-width: 980px; margin: 0 auto;
+    padding: 0 1.2rem 5rem;
+    transition: background 0.3s, color 0.3s;
+    line-height: 1.6;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.9rem 0;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand {
+    display: flex; align-items: center; gap: 0.55rem;
+    font-weight: 800; font-size: 1.2rem; margin-right: auto;
+    letter-spacing: -0.02em;
+  }
+  .brand .logo-ring {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: var(--grad); display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 12px rgba(91, 75, 214, 0.4);
+  }
+
+  /* ── Inputs / Controls ── */
+  select, input[type=text], input[type=file] {
+    background: var(--card); color: var(--text);
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem; font-family: var(--sans); font-size: 0.95rem;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  select:focus, input[type=text]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,75,214,0.15); }
+  input[type=text] { width: min(400px, 90%); }
+  button {
+    background: var(--grad); color: #fff; border: 0;
+    border-radius: var(--radius-sm); padding: 0.5rem 1.1rem;
+    font-family: var(--sans); font-weight: 700; font-size: 0.92rem;
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    box-shadow: 0 2px 12px rgba(91,75,214,0.25);
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(91,75,214,0.35); }
+  button:active { transform: translateY(0); }
+  [data-theme="dark"] button { color: var(--accent-text); }
+  button.ghost {
+    background: transparent; color: var(--text);
+    border: 1.5px solid var(--border); box-shadow: none;
+  }
+  button.ghost:hover { border-color: var(--accent); background: var(--hover); box-shadow: none; }
+  button.link {
+    background: none; color: var(--accent); padding: 0.1rem 0.4rem;
+    font-weight: 600; box-shadow: none; font-size: 0.85rem;
+  }
+  button.link:hover { background: var(--hover); transform: none; }
+  .chip {
+    background: var(--hover); border: 1px solid var(--border);
+    color: var(--text); border-radius: 999px; font-weight: 500;
+    font-size: 0.85rem; box-shadow: none; padding: 0.3rem 0.8rem;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .chip:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--hover)); transform: none; box-shadow: none; }
+
+  /* ── Hero ── */
+  .hero { text-align: center; padding: 2.4rem 0 0.5rem; }
+  .hero h1 {
+    font-family: var(--serif); font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.15; letter-spacing: -0.02em;
+  }
+  .hero h1 em {
+    background: var(--grad); -webkit-background-clip: text;
+    background-clip: text; color: transparent; font-style: italic;
+  }
+  .hero p { color: var(--muted); max-width: 600px; margin: 0.7rem auto 0; font-size: 1.05rem; }
+
+  /* ── Stats ── */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.65rem; margin: 1.4rem 0; }
+  @media (max-width: 600px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem;
+    text-align: center; box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .stat b { font-size: 1.9rem; display: block; font-variant-numeric: tabular-nums; line-height: 1.1; margin-bottom: 0.2rem; }
+  .stat span { color: var(--muted); font-size: 0.82rem; font-weight: 500; }
+  .stat.warn b { color: #e8643a; }
+  .stat.slipped b { color: #d63b6e; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.3rem 1.4rem;
+    margin: 1.1rem 0; box-shadow: var(--shadow);
+    transition: box-shadow 0.2s;
+  }
+  .card:hover { box-shadow: var(--shadow-lg); }
+  .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+  .card-icon { font-size: 1.3rem; }
+  .card h2 { font-family: var(--serif); font-size: 1.25rem; }
+  .hint { color: var(--muted); font-size: 0.88rem; margin: 0 0 0.8rem; }
+
+  /* ── Badges / Status ── */
+  .badge {
+    display: inline-block; padding: 0.14rem 0.6rem;
+    border-radius: 999px; font-size: 0.75rem; font-weight: 700; white-space: nowrap;
+  }
+  .COMMITTED { background: #fff3cd; color: #664d03; }
+  .OPEN { background: #cfe2ff; color: #084298; }
+  .COMPLETED, .DONE { background: #d1e7dd; color: #0f5132; }
+  .SLIPPED { background: #ffe5e9; color: #9b0025; }
+  .PROPOSED { background: #f0e6ff; color: #5a00c0; }
+  .fallback { background: #ffe5c2; color: #7c4700; }
+  .llm { background: #d1e7dd; color: #0f5132; }
+  .tag-drift { background: #ffe5e9; color: #9b0025; border-radius: 999px;
+    font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.5rem; }
+  [data-theme="dark"] .COMMITTED { background: #4d3d00; color: #ffe08a; }
+  [data-theme="dark"] .OPEN { background: #0d2c5e; color: #a9c6ff; }
+  [data-theme="dark"] .COMPLETED, [data-theme="dark"] .DONE { background: #0c3b2e; color: #8fe3c0; }
+  [data-theme="dark"] .SLIPPED { background: #4d0016; color: #ffb3c1; }
+  [data-theme="dark"] .PROPOSED { background: #2a1556; color: #d4b3ff; }
+  [data-theme="dark"] .fallback { background: #4d2800; color: #ffc87a; }
+  [data-theme="dark"] .llm { background: #0c3b2e; color: #8fe3c0; }
+
+  /* ── Evidence ── */
+  .evidence {
+    background: var(--ev-bg); border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0; padding: 0.5rem 0.75rem;
+    margin: 0.5rem 0; font-size: 0.88rem; font-style: italic;
+  }
+  .meta { color: var(--muted); font-size: 0.78rem; }
+
+  /* ── Layout helpers ── */
+  .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.7rem; }
+  .askbox { display: flex; gap: 0.5rem; }
+  .askbox input { flex: 1; font-size: 1rem; padding: 0.72rem 1rem; border-radius: 14px; }
+
+  /* ── Timeline rail ── */
+  .rail { position: relative; margin: 0.5rem 0 0 0.5rem; padding-left: 1.4rem; border-left: 2px solid var(--border); }
+  .node { position: relative; padding: 0.4rem 0 0.8rem; }
+  .node::before {
+    content: ""; position: absolute; left: -1.4rem; top: 0.72rem;
+    width: 0.72rem; height: 0.72rem; border-radius: 50%;
+    background: var(--card); border: 3px solid var(--accent);
+    transform: translateX(-50%); margin-left: -1px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .node.done::before { background: #22c55e; border-color: #22c55e; }
+  .node.slipped::before { background: #e8643a; border-color: #e8643a; }
+  .node .head { cursor: pointer; transition: color 0.15s; }
+  .node .head:hover { color: var(--accent); }
+
+  /* ── Meeting grid ── */
+  .meetgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.7rem; }
+  .meeting {
+    cursor: pointer; padding: 0.8rem 1rem; border-radius: 14px;
+    border: 1.5px solid var(--border); background: var(--hover);
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  }
+  .meeting:hover { border-color: var(--accent); box-shadow: var(--shadow); transform: translateY(-1px); }
+  .meeting b { display: block; margin-bottom: 0.15rem; }
+
+  /* ── Open/Drift strip ── */
+  .openstrip { display: grid; gap: 0.55rem; }
+  .openitem {
+    display: flex; gap: 0.55rem; align-items: flex-start;
+    padding: 0.65rem 0.85rem; border: 1.5px dashed var(--accent);
+    border-radius: 14px; background: var(--hover); transition: border-style 0.2s;
+  }
+  .openitem.drift-item { border-color: #e8643a; border-style: solid; }
+  .drift-arrow { font-size: 0.85rem; color: var(--muted); }
+
+  /* ── Drift section ── */
+  .drift-card { border-left: 4px solid #e8643a !important; }
+  .since-section h3 { font-size: 1rem; margin: 0.8rem 0 0.35rem; color: var(--muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+
+  /* ── Status history ── */
+  .history-rail { margin-top: 0.5rem; }
+  .hist-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0; font-size: 0.85rem; }
+  .hist-arrow { color: var(--muted); }
+
+  /* ── Welcome ── */
+  .welcome ol { margin: 0.4rem 0 0.9rem 1.2rem; }
+  .welcome li { margin: 0.3rem 0; }
+
+  /* ── Misc ── */
+  .hidden { display: none; }
+  .err { color: #c9003a; font-size: 0.88rem; }
+  footer { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+
+  /* ── Reveal animation ── */
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.5s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
+
+  /* ── SVG Graph ── */
+  #graphsvg { border: 1.5px solid var(--border); border-radius: 14px; background: var(--hover); }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 0.2rem; border-bottom: 1.5px solid var(--border); margin-bottom: 1rem; }
+  .tab {
+    padding: 0.5rem 1rem; cursor: pointer; border-bottom: 2.5px solid transparent;
+    font-weight: 600; font-size: 0.9rem; color: var(--muted);
+    transition: color 0.2s, border-color 0.2s;
+    background: none; border-radius: 0; box-shadow: none; transform: none;
+  }
+  .tab:hover { color: var(--accent); transform: none; box-shadow: none; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="logo-ring">
+      <svg width="18" height="18" viewBox="0 0 26 26" fill="none">
+        <circle cx="6" cy="6" r="3.4" fill="white" fill-opacity="0.9"/>
+        <circle cx="20" cy="8" r="3.4" fill="white" fill-opacity="0.7"/>
+        <circle cx="9" cy="20" r="3.4" fill="white" fill-opacity="0.7"/>
+        <circle cx="20" cy="19" r="2.4" fill="white" fill-opacity="0.6"/>
+        <path d="M8.5 7.5 17 8M7 9l1 8M12 19.5 18 19M18.5 10.5 19.5 17" stroke="white" stroke-width="1.6" stroke-opacity="0.8"/>
+      </svg>
+    </div>
+    MeetGraph
+  </div>
+  <select id="ui-lang" onchange="setLang(this.value)" title="UI language">
+    <option value="en">English</option>
+    <option value="manglish">Manglish</option>
+    <option value="ml">മലയാളം</option>
+  </select>
+  <button class="ghost" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+</div>
+
+<!-- Hero -->
+<div class="hero reveal">
+  <h1>Meetily forgets. <em>MeetGraph remembers.</em></h1>
+  <p data-i18n="subtitle"></p>
+</div>
+
+<!-- Stats -->
+<div class="stats reveal">
+  <div class="stat"><b id="st-meet">–</b><span data-i18n="stats_meetings"></span></div>
+  <div class="stat"><b id="st-com">–</b><span data-i18n="stats_commitments"></span></div>
+  <div class="stat warn"><b id="st-open">–</b><span data-i18n="stats_open"></span></div>
+  <div class="stat slipped"><b id="st-slip">–</b><span>Slipped</span></div>
+</div>
+
+<!-- Meetily Sync -->
+<div class="card reveal">
+  <div class="card-header"><span class="card-icon">🔄</span><h2 data-i18n="sync"></h2></div>
+  <p class="hint" data-i18n="sync_hint"></p>
+  <div class="row">
+    <button onclick="loadSync()" data-i18n="check_meetily"></button>
+  </div>
+  <div id="synclist"></div>
+</div>
+
+<!-- Open Commitments (Needs Attention) -->
+<div class="card reveal">
+  <div class="card-header"><span class="card-icon">⚡</span><h2 data-i18n="open_now"></h2></div>
+  <p class="hint" data-i18n="open_hint"></p>
+  <div class="openstrip" id="openstrip">…</div>
+</div>
+
+<!-- Commitment Drift -->
+<div class="card reveal drift-card">
+  <div class="card-header"><span class="card-icon">📅</span><h2>Commitment Drift</h2></div>
+  <p class="hint">Commitments where the deadline has changed from the original promise.</p>
+  <div id="drift-list">…</div>
+</div>
+
+<!-- Ask -->
+<div class="card reveal">
+  <div class="card-header"><span class="card-icon">🔍</span><h2 data-i18n="ask"></h2></div>
+  <div class="row askbox">
+    <input type="text" id="question" data-i18n-ph="ask_ph" value="What happened to Rahul's action?">
+    <button onclick="ask()" data-i18n="ask_btn"></button>
+  </div>
+  <div class="row">
+    <span class="meta" data-i18n="try_asking"></span>
+    <button class="chip" onclick="chipQ(this)">What happened to Rahul's action?</button>
+    <button class="chip" onclick="chipQ(this)">What is still open?</button>
+    <button class="chip" onclick="chipQ(this)">What did Priya commit to?</button>
+    <button class="chip" onclick="chipQ(this)">Who owes what?</button>
+  </div>
+  <div id="answer"></div>
+</div>
+
+<!-- Speaker Identities -->
+<div class="card reveal">
+  <div class="card-header"><span class="card-icon">👤</span><h2>Speaker Identities</h2></div>
+  <p class="hint">Resolved and confirmed speaker → person mappings. Confirm identities to improve commitment attribution across meetings.</p>
+  <button onclick="loadIdentities()" class="ghost" style="margin-bottom:0.6rem">Refresh</button>
+  <div id="identity-list">…</div>
+</div>
+
+<!-- Timeline -->
+<div class="card reveal">
+  <div class="card-header"><span class="card-icon">📈</span><h2 data-i18n="timeline"></h2></div>
+  <div class="row">
+    <input type="text" id="person" value="">
+    <button onclick="loadTimeline()" data-i18n="show_timeline"></button>
+  </div>
+  <div id="timeline">…</div>
+</div>
+
+<!-- What changed since? -->
+<div class="card reveal">
+  <div class="card-header"><span class="card-icon">🔔</span><h2>What changed since?</h2></div>
+  <p class="hint">Select a meeting to see all commitment changes, new items, and slipped deadlines since that point.</p>
+  <div class="row">
+    <select id="since-meeting"><option value="">Choose a meeting…</option></select>
+    <button onclick="loadSince()">Show Changes</button>
+  </div>
+  <div id="since-list"></div>
+</div>
+
+<!-- Pre-meeting Brief -->
+<div class="card reveal">
+  <div class="card-header"><span class="card-icon">📋</span><h2>Pre-meeting Brief</h2></div>
+  <p class="hint">A snapshot of open commitments and drift to review before your next meeting.</p>
+  <div class="row">
+    <select id="brief-meeting"><option value="">Choose a meeting…</option></select>
+    <button onclick="loadBrief()">Generate Brief</button>
+  </div>
+  <div id="brief-output"></div>
+</div>
+
+<!-- Graph -->
+<div class="card reveal">
+  <div class="card-header"><span class="card-icon">🕸️</span><h2 data-i18n="graph"></h2></div>
+  <p class="hint" data-i18n="graph_hint"></p>
+  <div class="row">
+    <input type="text" id="gperson" data-i18n-ph="person_ph">
+    <button onclick="loadGraph()" data-i18n="graph"></button>
+  </div>
+  <svg id="graphsvg" width="100%" height="400"></svg>
+  <div id="graph-detail" class="meta" style="margin-top:0.4rem"></div>
+</div>
+
+<!-- Meetings -->
+<div class="card reveal">
+  <div class="card-header"><span class="card-icon">📅</span><h2 data-i18n="meetings"></h2></div>
+  <p class="hint" data-i18n="meetings_hint"></p>
+  <div class="meetgrid" id="meetings">…</div>
+  <div id="meeting-detail"></div>
+</div>
+
+<!-- Recap -->
+<div class="card reveal">
+  <div class="card-header"><span class="card-icon">📝</span><h2 data-i18n="recap"></h2></div>
+  <div class="row">
+    <select id="recap-lang">
+      <option value="en">English</option>
+      <option value="ml">മലയാളം</option>
+      <option value="manglish">Manglish</option>
+    </select>
+    <input type="text" id="recap-person" data-i18n-ph="person_ph">
+    <button onclick="recap()" data-i18n="recap_btn"></button>
+  </div>
+  <div id="recap"></div>
+</div>
+
+<!-- Transcribe -->
+<div class="card reveal">
+  <div class="card-header"><span class="card-icon">🎙️</span><h2 data-i18n="transcribe"></h2></div>
+  <div class="row">
+    <input type="file" id="audio" accept="audio/*">
+    <button onclick="transcribe()" data-i18n="transcribe_btn"></button>
+  </div>
+  <div id="transcript"></div>
+</div>
+
+<!-- Welcome -->
+<div class="card welcome reveal" id="welcome">
+  <h2 data-i18n="welcome_title"></h2>
+  <ol>
+    <li data-i18n="step1"></li>
+    <li data-i18n="step2"></li>
+    <li data-i18n="step3"></li>
+  </ol>
+  <button class="ghost" onclick="dismissWelcome()" data-i18n="got_it"></button>
+</div>
+
+<footer>MeetGraph · local-first meeting memory · evidence over vibes · commitments over summaries</footer>
+
+<script>
+// ═══════════════════════════════ i18n ═══════════════════════════════
+const STR = {
+en: {
+  subtitle: "The memory layer for Meetily — every promise tracked across meetings, every answer backed by evidence.",
+  meetings: "Meetings", meetings_hint: "Pick a meeting to see its commitments and the exact words behind them.",
+  timeline: "Cross-meeting timeline", show_timeline: "Show timeline",
+  ask: "Ask about history", ask_ph: "Ask anything about your meetings…", ask_btn: "Ask", thinking: "Thinking…",
+  recap: "Recap in your language", recap_btn: "Generate recap", action_items: "Action items",
+  evidence: "Evidence", transcribe: "Transcribe audio", transcribe_btn: "Transcribe", transcribing: "Transcribing…",
+  mark_done: "mark done", mark_slipped: "mark slipped", try_asking: "Try asking:",
+  welcome_title: "First time here? Take the 30-second tour.",
+  step1: "1. Check Meetily Sync and import meetings — then ask questions about history.",
+  step2: "2. Every answer ships with evidence: speaker, timestamp, original words.",
+  step3: "3. Flip the theme or language up top. Track commitment drift automatically.",
+  got_it: "Got it, hide this", no_meetings: "No meetings yet.", no_threads: "No threads found.",
+  no_commitments: "No commitments.", person_ph: "person (optional, e.g. Rahul)",
+  stats_meetings: "Meetings", stats_commitments: "Commitments", stats_open: "Open",
+  open_now: "Needs Attention", open_hint: "Open commitments across all meetings — stuff that still needs doing.",
+  sync: "Meetily Sync", sync_hint: "Check Meetily for new meetings. Import brings them into MeetGraph.",
+  check_meetily: "Check Meetily", import_btn: "Import", fetched: "Imported", unfetched: "New",
+  graph: "Relation Graph", graph_hint: "Drag nodes. Click one to see its connections."
+},
+manglish: {
+  subtitle: "Meetily-ku vendiyulla memory layer. Paranja ella promises-um meetings-il track cheyyum.",
+  meetings: "Meetings", meetings_hint: "Or meeting select cheythal commitments-um thelivu kaanam.",
+  timeline: "Cross-meeting timeline", show_timeline: "Timeline kaanikku",
+  ask: "History chodhichu nokku", ask_ph: "Meetings-ne patti enthelum chodhi…", ask_btn: "Chodhi", thinking: "Alozhikku…",
+  recap: "Ningalude bhashayil recap", recap_btn: "Recap undaakku", action_items: "Cheyyendath",
+  evidence: "Thelivu", transcribe: "Audio transcribe cheyyu", transcribe_btn: "Transcribe", transcribing: "Transcribe cheyyunnu…",
+  mark_done: "done aakku", mark_slipped: "slipped aakku", try_asking: "Ithokke chodhichu nokku:",
+  welcome_title: "First time aano? 30-second tour edukku.",
+  step1: "1. Meetily Sync check cheytu meetings import cheyyu.",
+  step2: "2. Ella answer-inum thelivu undaakum: aaru paranju, eppozhu, enthu vaakkukal.",
+  step3: "3. Mukalil theme-um language-um maattam. Deadline drift automatic track cheyyum.",
+  got_it: "Manassilaayi, hide cheyyu", no_meetings: "Meetings onnum illa.", no_threads: "Threads onnum kittiyilla.",
+  no_commitments: "Commitments illa.", person_ph: "aal (optional, eg. Rahul)",
+  stats_meetings: "Meetings", stats_commitments: "Track cheythath", stats_open: "Ini cheyyanullath",
+  open_now: "Shraddha venam", open_hint: "Ella meetings-ilum open aayi kidakkunnavaye.",
+  sync: "Meetily Sync", sync_hint: "Meetily-il puthiya meetings undo ennu nokku.",
+  check_meetily: "Meetily nokku", import_btn: "Import cheyyu", fetched: "Imported", unfetched: "Puthiyath",
+  graph: "Graph", graph_hint: "Nodes-ne valichu nokku."
+},
+ml: {
+  subtitle: "മീറ്റ്‌ലിക്ക് വേണ്ടിയുള്ള മെമ്മറി ലെയർ. പ്രതിബദ്ധതകൾ ട്രാക്ക് ചെയ്യുക.",
+  meetings: "യോഗം", meetings_hint: "മീറ്റിംഗ് ക്ലിക്ക് ചെയ്ത് പ്രതിബദ്ധതകൾ കാണുക.",
+  timeline: "ക്രോസ്-മീറ്റിംഗ് ടൈംലൈൻ", show_timeline: "ടൈംലൈൻ കാണിക്കുക",
+  ask: "ചരിത്രം അന്വേഷിക്കുക", ask_ph: "ഒരു ചോദ്യം ചോദിക്കുക…", ask_btn: "ചോദ്യം", thinking: "ആലോചിക്കുന്നു…",
+  recap: "ഭാഷയിൽ സംഗ്രഹം", recap_btn: "സംഗ്രഹം", action_items: "നിർവഹിക്കേണ്ടത്",
+  evidence: "തെളിവ്", transcribe: "ഓഡിയോ", transcribe_btn: "ലിഖിതം", transcribing: "ലിഖിതമാക്കുന്നു…",
+  mark_done: "പൂർത്തി", mark_slipped: "slipped", try_asking: "ഇങ്ങനെ ചോദിക്കുക:",
+  welcome_title: "ആദ്യ ഉപയോഗം? ടൂർ എടുക്കുക.",
+  step1: "1. Meetily Sync ഉപയോഗിച്ച് മീറ്റിംഗ് ഇറക്കുമതി ചെയ്യുക.",
+  step2: "2. ഓരോ ഉത്തരത്തിനും തെളിവ് ഉണ്ട്.", step3: "3. Deadline drift auto track.",
+  got_it: "ശരി, മറയ്ക്കുക", no_meetings: "യോഗങ്ങൾ ഇല്ല.", no_threads: "ത്രെഡ് ഇല്ല.",
+  no_commitments: "പ്രതിബദ്ധതകൾ ഇല്ല.", person_ph: "ആൾ (ഉദാ. Rahul)",
+  stats_meetings: "യോഗങ്ങൾ", stats_commitments: "പ്രതിബദ്ധതകൾ", stats_open: "Open",
+  open_now: "ശ്രദ്ധ ആവശ്യം", open_hint: "Open commitments.",
+  sync: "Meetily Sync", sync_hint: "Meetily-ൽ പുതിയ മീറ്റിംഗ് ഉണ്ടോ?",
+  check_meetily: "Meetily പരിശോധിക്കുക", import_btn: "ഇറക്കുമതി", fetched: "ഇറക്കുമതി ചെയ്ത", unfetched: "പുതിയ",
+  graph: "ഗ്രാഫ്", graph_hint: "നോഡ് ക്ലിക്ക് ചെയ്യുക."
+}};
+let LANG = localStorage.getItem("mg-lang") || "en";
+function t(k) { return (STR[LANG] && STR[LANG][k]) || STR.en[k] || k; }
+function applyI18n() {
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  document.getElementById("ui-lang").value = LANG;
+}
+function setLang(v) { LANG = v; localStorage.setItem("mg-lang", v); applyI18n(); refreshDynamic(); }
+function toggleTheme() {
+  const h = document.documentElement;
+  h.dataset.theme = h.dataset.theme === "dark" ? "light" : "dark";
+  localStorage.setItem("mg-theme", h.dataset.theme);
+  document.getElementById("theme-btn").textContent = h.dataset.theme === "dark" ? "☀️" : "🌙";
+}
+function dismissWelcome() {
+  document.getElementById("welcome").classList.add("hidden");
+  localStorage.setItem("mg-welcome", "1");
+}
+
+// ═══════════════════════════════ API ════════════════════════════════
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ═══════════════════════════════ Evidence helpers ════════════════════
+function evHtml(e, meetingId, open) {
+  if (!e) return "";
+  return `<div class="evidence${open ? "" : " hidden"}" data-ev>"${e.text || ""}"<div class="meta">— ${e.speaker || "Unknown"}` +
+    (e.timestamp != null ? ` @ ${e.timestamp}s` : ``) +
+    (meetingId ? ` · meeting ${meetingId}` : ``) + `</div></div>`;
+}
+function toggleEv(el) {
+  const card = el.closest(".node, .openitem, div");
+  const ev = card ? card.querySelector("[data-ev]") : null;
+  if (ev) { ev.classList.toggle("hidden"); el.textContent = ev.classList.contains("hidden") ? "▸" : "▾"; }
+}
+
+// ═══════════════════════════════ Stats ════════════════════════════════
+async function loadStats() {
+  try {
+    const [ms, ts, drift] = await Promise.all([
+      api("/api/meetings"),
+      api("/api/timeline"),
+      api("/api/intel/drift").catch(() => []),
+    ]);
+    let total = 0, open = 0;
+    const openItems = [];
+    ts.forEach(g => g.items.forEach(i => {
+      total++;
+      if (!["COMPLETED", "DONE"].includes(i.status)) { open++; openItems.push(i); }
+    }));
+    document.getElementById("st-meet").textContent = ms.length;
+    document.getElementById("st-com").textContent = total;
+    document.getElementById("st-open").textContent = open;
+    document.getElementById("st-slip").textContent = drift.length;
+    document.getElementById("openstrip").innerHTML = openItems.map(i =>
+      `<div class="openitem"><span class="badge ${i.status}">${i.status}</span>` +
+      `<div><b>${i.person}</b> — <span class="head" onclick="toggleEv(this)" style="cursor:pointer" title="evidence">▸</span> ${i.commitment} <span class="meta">${i.meeting_title || ""}</span>` +
+      evHtml(i.evidence, i.meeting_id, false) +
+      `<div style="margin-top:0.3rem">` +
+      (i.status !== "DONE" && i.status !== "COMPLETED" ? `<button class="link" onclick="event.stopPropagation();updateStatus(${i.commitment_id},'DONE')">${t("mark_done")}</button>` : ``) +
+      (i.status === "COMMITTED" || i.status === "OPEN" ? `<button class="link" onclick="event.stopPropagation();updateStatus(${i.commitment_id},'SLIPPED')" style="color:#e8643a">${t("mark_slipped")}</button>` : ``) +
+      `</div></div></div>`
+    ).join("") || t("no_commitments");
+  } catch(e) { document.getElementById("openstrip").innerHTML = `<span class="err">${e.message}</span>`; }
+}
+
+// ═══════════════════════════════ Drift ════════════════════════════════
+async function loadDrift() {
+  try {
+    const drift = await api("/api/intel/drift");
+    const box = document.getElementById("drift-list");
+    if (!drift.length) { box.innerHTML = `<span class="meta">No deadline drift detected — all good! 🎯</span>`; return; }
+    box.innerHTML = drift.map(d =>
+      `<div class="openitem drift-item">
+        <span class="tag-drift">SLIPPED</span>
+        <div>
+          <b>${d.person}</b> — ${d.commitment}
+          <div class="meta drift-arrow">
+            📅 Original: <b>${d.original_deadline || "none"}</b>
+            → Now: <b>${d.current_deadline || "none"}</b>
+            ${d.deadline_changed_at_meeting ? `<span class="meta">· changed in ${d.meeting_title || d.meeting_id}</span>` : ""}
+          </div>
+          <span class="badge ${d.status}">${d.status}</span>
+        </div>
+      </div>`
+    ).join("");
+  } catch(e) {
+    document.getElementById("drift-list").innerHTML = `<span class="err">${e.message}</span>`;
+  }
+}
+
+// ═══════════════════════════════ Meetings ════════════════════════════
+let ALL_MEETINGS = [];
+async function loadMeetings() {
+  try {
+    const ms = await api("/api/meetings");
+    ALL_MEETINGS = ms;
+    document.getElementById("meetings").innerHTML = ms.map(m =>
+      `<div class="meeting" onclick="showMeeting('${m.meetily_id}')"><b>📅 ${m.title || m.meetily_id}</b><span class="meta">${m.meetily_id}</span></div>`
+    ).join("") || t("no_meetings");
+
+    // Populate meeting selectors
+    const sinceEl = document.getElementById("since-meeting");
+    const briefEl = document.getElementById("brief-meeting");
+    const opts = ms.map(m => `<option value="${m.meetily_id}">${m.title || m.meetily_id}</option>`).join("");
+    sinceEl.innerHTML = `<option value="">Choose a meeting…</option>` + opts;
+    briefEl.innerHTML = `<option value="">Choose a meeting…</option>` + opts;
+  } catch(e) { document.getElementById("meetings").innerHTML = `<span class="err">${e.message}</span>`; }
+}
+async function showMeeting(id) {
+  const m = await api("/api/meetings/" + encodeURIComponent(id));
+  document.getElementById("meeting-detail").innerHTML =
+    `<div style="margin-top:0.8rem"><h3>${m.title}</h3>` +
+    (m.commitments.map(c =>
+      `<div style="margin:0.5rem 0"><b>${c.person}</b> — ${c.commitment} <span class="badge ${c.status}">${c.status}</span>` +
+      evHtml(c.evidence, null, true) + `</div>`
+    ).join("") || t("no_commitments")) + `</div>`;
+}
+
+// ═══════════════════════════════ Timeline ════════════════════════════
+async function loadTimeline() {
+  const box = document.getElementById("timeline");
+  box.innerHTML = t("thinking");
+  try {
+    const person = document.getElementById("person").value;
+    const ts = await api("/api/timeline" + (person ? "?person=" + encodeURIComponent(person) : ""));
+    box.innerHTML = ts.map(g =>
+      `<div style="margin-bottom:1.2rem"><h3 style="font-size:1rem">${g.person}: <span style="font-weight:500;color:var(--muted)">${g.topic}</span> <span class="meta">(${g.meeting_count} meeting${g.meeting_count===1?"":"s"})</span></h3><div class="rail">` +
+      g.items.map(i => `<div class="node${["DONE","COMPLETED"].includes(i.status) ? " done" : i.status==="SLIPPED"?" slipped":""}">` +
+        `<div class="head" onclick="toggleEv(this)" title="evidence"><span class="badge ${i.status}">${i.status}</span> <b>${i.meeting_title || i.meeting_id}</b> — ${i.commitment} ▸</div>` +
+        (i.deadline ? `<div class="meta" style="margin-top:0.2rem">📅 ${i.deadline}${i.original_deadline && i.original_deadline !== i.deadline ? ` <span class="tag-drift">was: ${i.original_deadline}</span>` : ""}</div>` : "") +
+        `<div style="margin-top:0.3rem">` +
+        (!["DONE","COMPLETED"].includes(i.status) ? `<button class="link" onclick="event.stopPropagation();updateStatus(${i.commitment_id},'DONE')">${t("mark_done")}</button>` : "") +
+        (["COMMITTED","OPEN"].includes(i.status) ? `<button class="link" onclick="event.stopPropagation();updateStatus(${i.commitment_id},'SLIPPED')" style="color:#e8643a">${t("mark_slipped")}</button>` : "") +
+        `<button class="link" onclick="showHistory(${i.commitment_id})" title="Status history">📜 history</button>` +
+        `</div>` +
+        evHtml(i.evidence, i.meeting_id, false) + `</div>`
+      ).join("") + `</div></div>`
+    ).join("") || t("no_threads");
+  } catch(e) { box.innerHTML = `<span class="err">${e.message}</span>`; }
+}
+
+async function showHistory(commitmentId) {
+  try {
+    const hist = await api(`/api/intel/commitments/${commitmentId}/history`);
+    const msg = hist.map(h =>
+      `${h.changed_at ? h.changed_at.replace("T"," ").slice(0,16) : ""}: ${h.old_status || "—"} → ${h.new_status} (${h.changed_by || "?"})${h.note ? ` — ${h.note}` : ""}`
+    ).join("\n");
+    alert(`Status History #${commitmentId}\n\n${msg}`);
+  } catch(e) { alert(`History error: ${e.message}`); }
+}
+
+async function updateStatus(id, status) {
+  try {
+    await api(`/api/intel/commitments/${id}/status`, {
+      method: "PATCH",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({status})
+    });
+    loadTimeline(); loadStats(); loadDrift();
+  } catch(e) { alert(`Error: ${e.message}`); }
+}
+
+// ═══════════════════════════════ What Changed Since ════════════════════
+async function loadSince() {
+  const mid = document.getElementById("since-meeting").value;
+  if (!mid) return;
+  const box = document.getElementById("since-list");
+  box.innerHTML = t("thinking");
+  try {
+    const data = await api(`/api/intel/since/${encodeURIComponent(mid)}`);
+    let html = "";
+    if (data.new && data.new.length) {
+      html += `<div class="since-section"><h3>🆕 New Commitments (${data.new.length})</h3>`;
+      html += data.new.map(c =>
+        `<div class="openitem"><span class="badge ${c.status}">${c.status}</span><div><b>${c.person}</b> — ${c.commitment} <span class="meta">${c.meeting_title}</span></div></div>`
+      ).join("") + `</div>`;
+    }
+    if (data.status_changes && data.status_changes.length) {
+      html += `<div class="since-section"><h3>🔄 Status Changes (${data.status_changes.length})</h3>`;
+      html += data.status_changes.map(c =>
+        `<div class="openitem"><span class="badge ${c.old_status}">${c.old_status || "?"}</span> → <span class="badge ${c.new_status}">${c.new_status}</span><div><b>${c.person}</b> — ${c.commitment}${c.note ? `<div class="meta">${c.note}</div>` : ""}</div></div>`
+      ).join("") + `</div>`;
+    }
+    if (data.slipped && data.slipped.length) {
+      html += `<div class="since-section"><h3>⚠️ Slipped Deadlines (${data.slipped.length})</h3>`;
+      html += data.slipped.map(c =>
+        `<div class="openitem drift-item"><span class="tag-drift">SLIPPED</span><div><b>${c.person}</b> — ${c.commitment}${c.note ? `<div class="meta drift-arrow">${c.note}</div>` : ""}</div></div>`
+      ).join("") + `</div>`;
+    }
+    if (!html) html = `<span class="meta">No changes found since that meeting.</span>`;
+    box.innerHTML = html;
+  } catch(e) { box.innerHTML = `<span class="err">${e.message}</span>`; }
+}
+
+// ═══════════════════════════════ Pre-meeting Brief ════════════════════
+async function loadBrief() {
+  const mid = document.getElementById("brief-meeting").value;
+  if (!mid) return;
+  const box = document.getElementById("brief-output");
+  box.innerHTML = t("thinking");
+  try {
+    const data = await api(`/api/intel/brief/${encodeURIComponent(mid)}`);
+    let html = `<div style="margin-top:0.7rem">`;
+    html += `<div class="row"><span class="badge OPEN">${data.open_count} open</span> <span class="badge SLIPPED">${data.slipped_count} slipped</span></div>`;
+    if (data.open_commitments && data.open_commitments.length) {
+      html += `<div class="since-section"><h3>📌 Open Commitments</h3>`;
+      html += data.open_commitments.map(c =>
+        `<div class="openitem"><span class="badge ${c.status}">${c.status}</span><div><b>${c.person}</b> — ${c.commitment} <span class="meta">${c.meeting_title || ""}</span></div></div>`
+      ).join("") + `</div>`;
+    }
+    if (data.slipped_deadlines && data.slipped_deadlines.length) {
+      html += `<div class="since-section"><h3>⚠️ Slipped Deadlines</h3>`;
+      html += data.slipped_deadlines.map(d =>
+        `<div class="openitem drift-item"><span class="tag-drift">SLIPPED</span><div><b>${d.person}</b> — ${d.commitment} <span class="meta drift-arrow">was ${d.original_deadline} → now ${d.current_deadline}</span></div></div>`
+      ).join("") + `</div>`;
+    }
+    html += `</div>`;
+    box.innerHTML = html;
+  } catch(e) { box.innerHTML = `<span class="err">${e.message}</span>`; }
+}
+
+// ═══════════════════════════════ Speaker Identities ════════════════════
+async function loadIdentities() {
+  const box = document.getElementById("identity-list");
+  box.innerHTML = t("thinking");
+  try {
+    const ids = await api("/api/identities");
+    if (!ids.length) { box.innerHTML = `<span class="meta">No identities resolved yet. Import meetings to detect speakers.</span>`; return; }
+    box.innerHTML = ids.map(i =>
+      `<div class="openitem">
+        <span class="badge ${i.confirmed ? "DONE" : i.confidence > 0.7 ? "COMMITTED" : "OPEN"}">
+          ${i.confirmed ? "Confirmed" : i.confidence > 0.7 ? "High" : i.confidence > 0.3 ? "Medium" : "Low"}
+        </span>
+        <div>
+          <b>${i.speaker_label}</b> → ${i.person_name}
+          <span class="meta"> · ${i.method || "unknown"} · conf: ${(i.confidence * 100).toFixed(0)}%</span>
+          ${i.evidence_text ? `<div class="evidence hidden" data-ev>"${i.evidence_text}"</div>` : ""}
+          ${!i.confirmed ? `<button class="link" onclick="confirmIdentity(${i.id}, '${i.person_name}')">✓ confirm</button>
+          <button class="link" onclick="promptConfirmIdentity(${i.id})" style="color:var(--muted)">✎ edit name</button>` : `<span class="meta"> ✓ confirmed</span>`}
+        </div>
+      </div>`
+    ).join("");
+  } catch(e) { box.innerHTML = `<span class="err">${e.message}</span>`; }
+}
+async function confirmIdentity(id, name) {
+  try {
+    await api(`/api/identities/${id}/confirm`, {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({person_name: name})
+    });
+    loadIdentities(); loadTimeline();
+  } catch(e) { alert("Error: " + e.message); }
+}
+function promptConfirmIdentity(id) {
+  const name = prompt("Enter the correct person name:");
+  if (name && name.trim()) confirmIdentity(id, name.trim());
+}
+
+// ═══════════════════════════════ Ask ════════════════════════════════
+function chipQ(el) { document.getElementById("question").value = el.textContent; ask(); }
+async function ask() {
+  const box = document.getElementById("answer");
+  box.innerHTML = t("thinking");
+  try {
+    const q = document.getElementById("question").value;
+    const r = await api("/api/query", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({question: q})});
+    box.innerHTML = `<p><span class="badge ${r.fallback ? "fallback" : "llm"}">${r.fallback ? "extractive fallback" : "LLM answer"}</span></p>` +
+      `<p>${r.answer.replace(/\n/g, "<br>")}</p>` +
+      `<h4 style="margin:0.6rem 0 0.3rem">${t("evidence")}</h4>` +
+      r.evidence.map(e => `<div><span class="badge ${e.status}">${e.status}</span> ${e.meeting_title || ""} — ${e.commitment}${evHtml(e.evidence, e.meeting_id, true)}</div>`).join("");
+  } catch(e) { box.innerHTML = `<span class="err">Error: ${e.message}</span>`; }
+}
+
+// ═══════════════════════════════ Recap ════════════════════════════════
+async function recap() {
+  const box = document.getElementById("recap");
+  box.innerHTML = t("thinking");
+  try {
+    const person = document.getElementById("recap-person").value || null;
+    const r = await api("/api/recap", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({language: document.getElementById("recap-lang").value, person})});
+    box.innerHTML = `<p><span class="badge ${r.fallback ? "fallback" : "llm"}">${r.fallback ? "extractive fallback" : "LLM recap"}</span></p>` +
+      `<p>${r.recap.replace(/\n/g, "<br>")}</p><h4 style="margin:0.6rem 0 0.3rem">${t("action_items")}</h4><ul>` +
+      r.action_items.map(a => `<li>${a}</li>`).join("") + `</ul>` +
+      `<p class="meta">${r.evidence.length} ${t("evidence").toLowerCase()} items</p>`;
+  } catch(e) { box.innerHTML = `<span class="err">Error: ${e.message}</span>`; }
+}
+
+// ═══════════════════════════════ Transcribe ════════════════════════════
+async function transcribe() {
+  const box = document.getElementById("transcript");
+  const f = document.getElementById("audio").files[0];
+  if (!f) { box.innerHTML = t("no_commitments"); return; }
+  box.innerHTML = t("transcribing");
+  try {
+    const fd = new FormData();
+    fd.append("file", f);
+    const r = await api("/api/transcribe", {method: "POST", body: fd});
+    box.innerHTML = `<p><span class="badge llm">${r.engine}</span> <span class="meta">${r.language_code}</span></p><p>${r.transcript || "(empty)"}</p>`;
+  } catch(e) { box.innerHTML = `<span class="err">Error: ${e.message}</span>`; }
+}
+
+// ═══════════════════════════════ Sync ════════════════════════════════
+async function loadSync() {
+  const box = document.getElementById("synclist");
+  box.innerHTML = t("thinking");
+  try {
+    const ms = await api("/api/sync/status");
+    box.innerHTML = ms.map(m =>
+      `<div class="openitem"><span class="badge ${m.fetched ? "DONE" : "OPEN"}">${m.fetched ? t("fetched") : t("unfetched")}</span>` +
+      `<div><b>${m.title || m.id}</b> <span class="meta">${m.id}</span></div>` +
+      (m.fetched ? `` : ` <button class="link" id="imp-${m.id}" onclick="importMeeting('${m.id}')">${t("import_btn")}</button>`)
+    ).join("") || t("no_meetings");
+  } catch(e) { box.innerHTML = `<span class="err">${e.message}</span>`; }
+}
+async function importMeeting(id) {
+  const btn = document.getElementById("imp-" + CSS.escape(id));
+  if (btn) btn.textContent = t("thinking");
+  try {
+    await api(`/api/sync/meetings/${encodeURIComponent(id)}`, {method: "POST"});
+    loadSync(); loadMeetings(); loadStats(); loadTimeline(); loadGraph(); loadDrift(); loadIdentities();
+  } catch(e) { if (btn) btn.textContent = `Error: ${e.message}`; }
+}
+
+// ═══════════════════════════════ Graph ════════════════════════════════
+function nodeColor(n) {
+  if (n.type === "person") return "#8b7cff";
+  if (n.type === "meeting") return "#3fb8af";
+  return n.status === "DONE" || n.status === "COMPLETED" ? "#3faf71" :
+         n.status === "SLIPPED" ? "#e8643a" :
+         n.status === "OPEN" ? "#5b9dff" : "#e0a100";
+}
+function shortLabel(s) { return s && s.length > 22 ? s.slice(0, 21) + "…" : (s || ""); }
+let GDATA = {nodes: [], edges: []}, GPOS = {};
+async function loadGraph() {
+  const box = document.getElementById("graph-detail");
+  box.textContent = t("thinking");
+  try {
+    const p = document.getElementById("gperson").value;
+    GDATA = await api("/api/graph" + (p ? "?person=" + encodeURIComponent(p) : ""));
+    GPOS = {}; selectedNode = null;
+    drawGraph(); box.textContent = "";
+  } catch(e) { box.innerHTML = `<span class="err">${e.message}</span>`; }
+}
+function simulate(nodes, links, w, h) {
+  nodes.forEach(n => { if (n.x === undefined) { n.x = Math.random()*w; n.y = Math.random()*h; } n.vx=0; n.vy=0; });
+  const idx = Object.fromEntries(nodes.map((n,i) => [n.id, i]));
+  const adj = {};
+  links.forEach(l => { (adj[l.source]=adj[l.source]||[]).push(l.target); (adj[l.target]=adj[l.target]||[]).push(l.source); });
+  let alpha = 1;
+  for (let s=0; s<260; s++) {
+    for (let i=0; i<nodes.length; i++) for (let j=i+1; j<nodes.length; j++) {
+      const a=nodes[i], b=nodes[j]; let dx=a.x-b.x, dy=a.y-b.y;
+      const d=Math.hypot(dx,dy)||1, f=Math.min(5500/(d*d),4)*alpha;
+      dx/=d; dy/=d; a.vx+=dx*f; a.vy+=dy*f; b.vx-=dx*f; b.vy-=dy*f;
+    }
+    links.forEach(l => {
+      const a=nodes[idx[l.source]], b=nodes[idx[l.target]]; if(!a||!b) return;
+      let dx=b.x-a.x, dy=b.y-a.y; const d=Math.hypot(dx,dy)||1, f=(d-95)*0.02*alpha;
+      dx/=d; dy/=d; a.vx+=dx*f; a.vy+=dy*f; b.vx-=dx*f; b.vy-=dy*f;
+    });
+    nodes.forEach(n => {
+      n.vx+=(w/2-n.x)*0.002*alpha; n.vy+=(h/2-n.y)*0.002*alpha;
+      n.vx*=0.85; n.vy*=0.85; n.x+=n.vx; n.y+=n.vy;
+      n.x=Math.max(32,Math.min(w-32,n.x)); n.y=Math.max(26,Math.min(h-26,n.y));
+    });
+    alpha*=0.985;
+  }
+  return {idx, adj};
+}
+function drawGraph(focus) {
+  const svg = document.getElementById("graphsvg");
+  const W = svg.clientWidth || 820, H = 400;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const nodes = GDATA.nodes.map(n => ({...n, ...(GPOS[n.id]||{})}));
+  const links = GDATA.edges;
+  if (!nodes.length) { svg.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="var(--muted)" font-size="14">Import meetings to see the graph</text>`; return; }
+  const {idx, adj} = simulate(nodes, links, W, H);
+  nodes.forEach(n => { GPOS[n.id] = {x:n.x, y:n.y}; });
+  const dim = id => focus && id !== focus && !(adj[focus]||[]).includes(id);
+  let html = "";
+  links.forEach(l => {
+    const a=nodes[idx[l.source]], b=nodes[idx[l.target]]; if(!a||!b) return;
+    const faint = (focus && l.source!==focus && l.target!==focus) ? ' opacity="0.12"' : "";
+    html += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="var(--muted)" stroke-width="1.5"${faint}><title>${l.label}</title></line>`;
+  });
+  nodes.forEach(n => {
+    const r = n.type==="person"?14 : n.type==="meeting"?12 : 10;
+    html += `<g data-nid="${n.id}" style="cursor:pointer"${dim(n.id)?' opacity="0.2"':""}>` +
+      `<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${nodeColor(n)}" stroke="var(--card)" stroke-width="2.5"><title>${n.label}</title></circle>` +
+      `<text x="${n.x}" y="${n.y+r+13}" text-anchor="middle" font-size="11" fill="var(--text)" font-family="var(--sans)">${shortLabel(n.label)}</text></g>`;
+  });
+  svg.innerHTML = html;
+  svg.querySelectorAll("g[data-nid]").forEach(g => {
+    g.addEventListener("click", () => { if(g.dataset.moved==="1"){g.dataset.moved="0";return;} selectNode(g.dataset.nid); });
+    enableDrag(g);
+  });
+}
+function enableDrag(g) {
+  const svg = document.getElementById("graphsvg");
+  g.addEventListener("pointerdown", ev => {
+    ev.preventDefault(); ev.stopPropagation();
+    const id = g.dataset.nid; let moved = false;
+    const move = e2 => {
+      moved = true; g.dataset.moved = "1";
+      const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+      GPOS[id] = {
+        x: Math.max(32, Math.min(vb.width-32, (e2.clientX-r.left)*vb.width/r.width)),
+        y: Math.max(26, Math.min(vb.height-26, (e2.clientY-r.top)*vb.height/r.height)),
+      };
+      drawGraph(selectedNode);
+    };
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+  });
+}
+let selectedNode = null;
+function selectNode(id) {
+  selectedNode = (selectedNode === id) ? null : id;
+  drawGraph(selectedNode);
+  const box = document.getElementById("graph-detail");
+  if (!selectedNode) { box.textContent = ""; return; }
+  const n = GDATA.nodes.find(x => x.id === selectedNode);
+  const nb = GDATA.edges.filter(e => e.source===selectedNode||e.target===selectedNode);
+  box.innerHTML = `<b>${n.label}</b> <span class="meta">${n.type}${n.status?" · "+n.status:""}</span><br>` +
+    nb.map(e => `<span class="meta">${e.source===selectedNode?"→":"←"} ${e.label}: ${(GDATA.nodes.find(x=>x.id===(e.source===selectedNode?e.target:e.source))||{}).label||""}</span>`).join("<br>");
+}
+
+// ═══════════════════════════════ Init ════════════════════════════════
+function refreshDynamic() { loadStats(); loadDrift(); loadTimeline(); loadGraph(); loadIdentities(); }
+
+(function init() {
+  const savedTheme = localStorage.getItem("mg-theme");
+  if (savedTheme) {
+    document.documentElement.dataset.theme = savedTheme;
+    document.getElementById("theme-btn").textContent = savedTheme==="dark"?"☀️":"🌙";
+  }
+  if (localStorage.getItem("mg-welcome")) document.getElementById("welcome").classList.add("hidden");
+  applyI18n();
+  loadMeetings(); loadTimeline(); loadStats(); loadGraph(); loadDrift(); loadIdentities();
+
+  const io = ("IntersectionObserver" in window) ? new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+  })) : null;
+  document.querySelectorAll(".reveal").forEach(el => { if (io) io.observe(el); else el.classList.add("in"); });
+})();
+</script>
+</body>
+</html>
