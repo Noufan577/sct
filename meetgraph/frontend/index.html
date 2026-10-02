@@ -603,13 +603,54 @@ async function loadMeetings() {
   } catch(e) { document.getElementById("meetings").innerHTML = `<span class="err">${e.message}</span>`; }
 }
 async function showMeeting(id) {
-  const m = await api("/api/meetings/" + encodeURIComponent(id));
-  document.getElementById("meeting-detail").innerHTML =
-    `<div style="margin-top:0.8rem"><h3>${m.title}</h3>` +
-    (m.commitments.map(c =>
-      `<div style="margin:0.5rem 0"><b>${c.person}</b> — ${c.commitment} <span class="badge ${c.status}">${c.status}</span>` +
-      evHtml(c.evidence, null, true) + `</div>`
-    ).join("") || t("no_commitments")) + `</div>`;
+  document.getElementById("meeting-detail").innerHTML = t("thinking");
+  try {
+    const [m, transcript, identities] = await Promise.all([
+      api("/api/meetings/" + encodeURIComponent(id)),
+      api("/api/meetily/meetings/" + encodeURIComponent(id) + "/transcript").catch(e => []),
+      api("/api/identities?meeting_id=" + encodeURIComponent(id)).catch(e => [])
+    ]);
+
+    const idMap = {};
+    identities.forEach(i => idMap[i.speaker_label] = i.person_name);
+
+    let html = `<div class="meeting-detail-container" style="margin-top:1rem">
+      <h3>${m.title}</h3>
+      <div class="tabs" style="margin-top:0.8rem">
+        <button class="tab active" onclick="switchTab(this, 'panel-commits')">Commitments</button>
+        <button class="tab" onclick="switchTab(this, 'panel-transcript')">Full Transcript</button>
+      </div>
+      
+      <div id="panel-commits" class="tab-panel active">
+        ${m.commitments.map(c =>
+          `<div style="margin:0.5rem 0"><b>${c.person}</b> — ${c.commitment} <span class="badge ${c.status}">${c.status}</span>` +
+          evHtml(c.evidence, null, true) + `</div>`
+        ).join("") || t("no_commitments")}
+      </div>
+      
+      <div id="panel-transcript" class="tab-panel">
+        ${transcript.length ? transcript.map(s => {
+           const person = idMap[s.speaker] || s.speaker;
+           return `<div style="margin-bottom:0.8rem">
+             <b>${person}</b> <span class="meta">${s.timestamp != null ? Math.floor(s.timestamp)+'s' : ''}</span><br>
+             ${s.text}
+           </div>`;
+        }).join("") : '<span class="meta">Transcript not available.</span>'}
+      </div>
+    </div>`;
+    
+    document.getElementById("meeting-detail").innerHTML = html;
+  } catch(e) {
+    document.getElementById("meeting-detail").innerHTML = `<span class="err">${e.message}</span>`;
+  }
+}
+
+function switchTab(btn, panelId) {
+  const container = btn.closest('.meeting-detail-container');
+  container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  container.querySelector('#' + panelId).classList.add('active');
 }
 
 // ═══════════════════════════════ Timeline ════════════════════════════
