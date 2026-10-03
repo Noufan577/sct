@@ -403,6 +403,7 @@
     </select>
     <input type="text" id="recap-person" data-i18n-ph="person_ph">
     <button onclick="recap()" data-i18n="recap_btn"></button>
+    <button onclick="broadcastRecap()" class="ghost" id="broadcast-btn" style="display:none; color: var(--accent);">✉️ Broadcast</button>
   </div>
   <div id="recap"></div>
 </div>
@@ -587,15 +588,18 @@ async function loadStats() {
     document.getElementById("st-com").textContent = total;
     document.getElementById("st-open").textContent = open;
     document.getElementById("st-slip").textContent = drift.length;
-    document.getElementById("openstrip").innerHTML = openItems.map(i =>
-      `<div class="openitem"><span class="badge ${i.status}">${i.status}</span>` +
+    document.getElementById("openstrip").innerHTML = openItems.map(i => {
+      const commEsc = (i.commitment || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+      const meetEsc = (i.meeting_title || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+      return `<div class="openitem"><span class="badge ${i.status}">${i.status}</span>` +
       `<div><b>${i.person}</b> — <span class="head" onclick="toggleEv(this)" style="cursor:pointer" title="evidence">▸</span> ${i.commitment} <span class="meta">${i.meeting_title || ""}</span>` +
       evHtml(i.evidence, i.meeting_id, false) +
       `<div style="margin-top:0.3rem">` +
       (i.status !== "DONE" && i.status !== "COMPLETED" ? `<button class="link" onclick="event.stopPropagation();updateStatus(${i.commitment_id},'DONE')">${t("mark_done")}</button>` : ``) +
       (i.status === "COMMITTED" || i.status === "OPEN" ? `<button class="link" onclick="event.stopPropagation();updateStatus(${i.commitment_id},'SLIPPED')" style="color:#e8643a">${t("mark_slipped")}</button>` : ``) +
-      `</div></div></div>`
-    ).join("") || t("no_commitments");
+      `<button class="link" onclick="event.stopPropagation();remindPersonInline(this, '${i.person}', '${commEsc}', '${meetEsc}')">📩 Remind</button>` +
+      `</div></div></div>`;
+    }).join("") || t("no_commitments");
   } catch(e) { document.getElementById("openstrip").innerHTML = `<span class="err">${e.message}</span>`; }
 }
 
@@ -605,8 +609,10 @@ async function loadDrift() {
     const drift = await api("/api/intel/drift");
     const box = document.getElementById("drift-list");
     if (!drift.length) { box.innerHTML = `<span class="meta">No deadline drift detected — all good! 🎯</span>`; return; }
-    box.innerHTML = drift.map(d =>
-      `<div class="openitem drift-item">
+    box.innerHTML = drift.map(d => {
+      const commEsc = (d.commitment || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+      const meetEsc = (d.meeting_title || d.meeting_id || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+      return `<div class="openitem drift-item">
         <span class="tag-drift">SLIPPED</span>
         <div>
           <b>${d.person}</b> — ${d.commitment}
@@ -616,9 +622,10 @@ async function loadDrift() {
             ${d.deadline_changed_at_meeting ? `<span class="meta">· changed in ${d.meeting_title || d.meeting_id}</span>` : ""}
           </div>
           <span class="badge ${d.status}">${d.status}</span>
+          <button class="link" onclick="remindPersonInline(this, '${d.person}', '${commEsc}', '${meetEsc}')">📩 Remind</button>
         </div>
-      </div>`
-    ).join("");
+      </div>`;
+    }).join("");
   } catch(e) {
     document.getElementById("drift-list").innerHTML = `<span class="err">${e.message}</span>`;
   }
@@ -886,18 +893,50 @@ async function ask() {
 }
 
 // ═══════════════════════════════ Recap ════════════════════════════════
+let lastRecapData = null;
+
 async function recap() {
   const box = document.getElementById("recap");
   box.innerHTML = t("thinking");
+  document.getElementById("broadcast-btn").style.display = "none";
   try {
     const person = document.getElementById("recap-person").value || null;
     const r = await api("/api/recap", {method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({language: document.getElementById("recap-lang").value, person})});
+    
+    lastRecapData = r; // Store for broadcasting
+    
     box.innerHTML = `<p><span class="badge ${r.fallback ? "fallback" : "llm"}">${r.fallback ? "extractive fallback" : "LLM recap"}</span></p>` +
       `<p>${r.recap.replace(/\n/g, "<br>")}</p><h4 style="margin:0.6rem 0 0.3rem">${t("action_items")}</h4><ul>` +
       r.action_items.map(a => `<li>${a}</li>`).join("") + `</ul>` +
       `<p class="meta">${r.evidence.length} ${t("evidence").toLowerCase()} items</p>`;
+      
+    document.getElementById("broadcast-btn").style.display = "inline-block";
   } catch(e) { box.innerHTML = `<span class="err">Error: ${e.message}</span>`; }
+}
+
+async function broadcastRecap() {
+  if (!lastRecapData) return;
+  const btn = document.getElementById("broadcast-btn");
+  btn.disabled = true;
+  btn.innerText = "Sending...";
+  
+  const content = `MEETING RECAP:\n\n${lastRecapData.recap}\n\nACTION ITEMS:\n${lastRecapData.action_items.map(a => "- " + a).join("\n")}`;
+  
+  try {
+    await api("/api/notifications/broadcast", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        subject: "Meeting Recap & Action Items",
+        content: content
+      })
+    });
+    btn.innerText = "✓ Sent";
+  } catch(e) {
+    alert("Broadcast failed: " + e.message);
+    btn.disabled = false;
+    btn.innerText = "✉️ Broadcast";
+  }
 }
 
 // ═══════════════════════════════ Transcribe ════════════════════════════

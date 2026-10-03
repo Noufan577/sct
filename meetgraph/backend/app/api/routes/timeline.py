@@ -17,6 +17,7 @@ def _item_to_response(item: Dict[str, Any]) -> TimelineItemResponse:
     ev = item.get("evidence") or {}
     return TimelineItemResponse(
         commitment_id=item.get("commitment_id"),
+        person=item.get("person") or "Unknown",
         commitment=item.get("commitment") or "",
         deadline=item.get("deadline"),
         original_deadline=item.get("original_deadline"),

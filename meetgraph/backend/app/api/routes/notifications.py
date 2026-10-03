@@ -36,3 +36,23 @@ async def send_reminder(req: RemindRequest, background_tasks: BackgroundTasks):
         
     background_tasks.add_task(_send_email_task, req)
     return {"status": "accepted", "message": f"Reminder queued for {req.email_address}"}
+
+class BroadcastRequest(BaseModel):
+    subject: str
+    content: str
+
+@router.post("/broadcast")
+async def broadcast_recap(req: BroadcastRequest, background_tasks: BackgroundTasks):
+    """Broadcast a meeting recap to the team."""
+    svc = EmailService()
+    if not svc.user or not svc.password:
+        raise HTTPException(status_code=500, detail="SMTP credentials are not configured in the backend.")
+        
+    def _send():
+        # For MVP, send to the SMTP_FROM configured email address.
+        dest = svc.from_email
+        if dest:
+            svc.send_email(dest, req.subject, req.content)
+            
+    background_tasks.add_task(_send)
+    return {"status": "accepted"}

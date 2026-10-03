@@ -43,6 +43,7 @@ class TimelineEvidenceResponse(BaseModel):
 
 class TimelineItemResponse(BaseModel):
     commitment_id: int
+    person: str
     commitment: str
     deadline: Optional[str]
     original_deadline: Optional[str] = None
