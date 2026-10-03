@@ -307,12 +307,7 @@
   <div class="openstrip" id="openstrip">…</div>
 </div>
 
-<!-- Commitment Drift -->
-<div class="card reveal drift-card">
-  <div class="card-header"><span class="card-icon">📅</span><h2>Commitment Drift</h2></div>
-  <p class="hint">Commitments where the deadline has changed from the original promise.</p>
-  <div id="drift-list">…</div>
-</div>
+
 
 <!-- Ask -->
 <div class="card reveal">
@@ -598,6 +593,7 @@ async function loadStats() {
       (i.status !== "DONE" && i.status !== "COMPLETED" ? `<button class="link" onclick="event.stopPropagation();updateStatus(${i.commitment_id},'DONE')">${t("mark_done")}</button>` : ``) +
       (i.status === "COMMITTED" || i.status === "OPEN" ? `<button class="link" onclick="event.stopPropagation();updateStatus(${i.commitment_id},'SLIPPED')" style="color:#e8643a">${t("mark_slipped")}</button>` : ``) +
       `<button class="link" onclick="event.stopPropagation();remindPersonInline(this, '${i.person}', '${commEsc}', '${meetEsc}')">📩 Remind</button>` +
+      `<button class="link" onclick="event.stopPropagation();draftFollowUpInline(this, ${i.commitment_id})" style="color:var(--accent2)">✍️ Draft Follow-up</button>` +
       `</div></div></div>`;
     }).join("") || t("no_commitments");
   } catch(e) { document.getElementById("openstrip").innerHTML = `<span class="err">${e.message}</span>`; }
@@ -606,8 +602,9 @@ async function loadStats() {
 // ═══════════════════════════════ Drift ════════════════════════════════
 async function loadDrift() {
   try {
-    const drift = await api("/api/intel/drift");
     const box = document.getElementById("drift-list");
+    if (!box) return;
+    const drift = await api("/api/intel/drift");
     if (!drift.length) { box.innerHTML = `<span class="meta">No deadline drift detected — all good! 🎯</span>`; return; }
     box.innerHTML = drift.map(d => {
       const commEsc = (d.commitment || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
@@ -627,7 +624,8 @@ async function loadDrift() {
       </div>`;
     }).join("");
   } catch(e) {
-    document.getElementById("drift-list").innerHTML = `<span class="err">${e.message}</span>`;
+    const box = document.getElementById("drift-list");
+    if (box) box.innerHTML = `<span class="err">${e.message}</span>`;
   }
 }
 
@@ -829,6 +827,39 @@ function remindPersonInline(btn, person, commitment, meetingTitle) {
   };
   btn.parentNode.replaceChild(input, btn);
   input.focus();
+}
+
+async function draftFollowUpInline(btn, commitmentId) {
+  const origText = btn.innerText;
+  btn.innerText = "✍️ Drafting...";
+  btn.disabled = true;
+  try {
+    const data = await api(`/api/intel/commitments/${commitmentId}/draft-reminder`);
+    if (data.draft) {
+      btn.innerText = "✓ Drafted";
+      // Create a small container to show the drafted email right in the UI
+      const container = document.createElement("div");
+      container.style = "margin-top: 0.5rem; padding: 0.8rem; background: var(--ev-bg); border-radius: var(--radius-sm); border: 1px solid var(--border);";
+      
+      const title = document.createElement("div");
+      title.innerHTML = "<b>Subject:</b> Checking in: Meeting Action Item";
+      title.style = "margin-bottom: 0.5rem; font-size: 0.9rem;";
+      
+      const textarea = document.createElement("textarea");
+      textarea.value = data.draft;
+      textarea.style = "width: 100%; height: 120px; padding: 0.5rem; font-family: var(--sans); font-size: 0.9rem; border: 1px solid var(--border); border-radius: 4px; resize: vertical;";
+      
+      container.appendChild(title);
+      container.appendChild(textarea);
+      
+      // Append below the button's parent div
+      btn.closest('.openitem').appendChild(container);
+    }
+  } catch (e) {
+    alert("Error drafting email: " + e.message);
+    btn.innerText = origText;
+    btn.disabled = false;
+  }
 }
 
 // ═══════════════════════════════ Speaker Identities ════════════════════

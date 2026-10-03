@@ -109,3 +109,37 @@ def update_status(
         "person": updated.person,
         "commitment": updated.commitment,
     }
+
+
+@router.get("/commitments/{commitment_id}/draft-reminder")
+async def draft_reminder(
+    commitment_id: int,
+    repo: DBRepository = Depends(_repo)
+) -> Dict[str, str]:
+    """Draft a polite follow-up email for a commitment using Ollama."""
+    from app.integrations.ollama.client import OllamaClient
+    
+    commits = repo.get_all_commitments()
+    commitment = next((c for c in commits if c["commitment_id"] == commitment_id), None)
+    if not commitment:
+        raise HTTPException(status_code=404, detail="Commitment not found")
+        
+    client = OllamaClient()
+    meeting_title = commitment.get("meeting_title") or "our previous meeting"
+    prompt = (
+        f"Write a short, polite, one-paragraph email to {commitment['person']} "
+        f"checking in on this task they committed to: '{commitment['commitment']}'. "
+        f"The task was assigned during the meeting '{meeting_title}'. "
+        "Do not include a subject line, just the email body starting with a greeting. "
+        "Keep it friendly and concise."
+    )
+    
+    try:
+        response = await client.generate(
+            prompt=prompt, 
+            system="You are a helpful executive assistant writing polite follow-up emails."
+        )
+        draft = response.get("response", "").strip()
+        return {"draft": draft}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate draft: {str(e)}")
