@@ -839,7 +839,7 @@ async function draftFollowUpInline(btn, commitmentId) {
       btn.innerText = "✓ Drafted";
       // Create a small container to show the drafted email right in the UI
       const container = document.createElement("div");
-      container.style = "margin-top: 0.5rem; padding: 0.8rem; background: var(--ev-bg); border-radius: var(--radius-sm); border: 1px solid var(--border);";
+      container.style = "margin-top: 0.8rem; padding: 0.8rem; background: var(--ev-bg); border-radius: var(--radius-sm); border: 1px solid var(--border);";
       
       const title = document.createElement("div");
       title.innerHTML = "<b>Subject:</b> Checking in: Meeting Action Item";
@@ -852,8 +852,12 @@ async function draftFollowUpInline(btn, commitmentId) {
       container.appendChild(title);
       container.appendChild(textarea);
       
-      // Append below the button's parent div
-      btn.closest('.openitem').appendChild(container);
+      // Append to the wrapper div (which holds the text and buttons), not the flex parent
+      btn.closest('div').appendChild(container);
+    } else {
+      alert("The AI returned an empty response. Please try again.");
+      btn.innerText = origText;
+      btn.disabled = false;
     }
   } catch (e) {
     alert("Error drafting email: " + e.message);
