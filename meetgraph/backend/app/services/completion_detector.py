@@ -28,15 +28,17 @@ logger = logging.getLogger(__name__)
 # Regex patterns that signal work completion
 DONE_SIGNALS = [
     re.compile(p, re.IGNORECASE) for p in [
-        r"\b(is|are|has been|have been)\s+(done|finished|completed|submitted|delivered|ready|sent|deployed|published)\b",
-        r"\b(i'?ve?|we'?ve?|i have|we have)\s+(done|finished|completed|submitted|delivered|sent|deployed)\b",
-        r"\b(already|just)\s+(done|finished|completed|submitted|sent|delivered)\b",
-        r"\b(finished|completed|done|submitted|delivered|sent)\s+(the|it|this|that|my|our)\b",
+        r"\b(is|are|was|were|has been|have been|getting it|got it)\s+(done|finished|completed|submitted|delivered|ready|sent|deployed|published)\b",
+        r"\b(i'?ve?|we'?ve?|i have|we have|i|we)\s+(done|finished|completed|complete|submitted|delivered|sent|deployed)\b",
+        r"\b(already|just)\s+(done|finished|completed|complete|submitted|sent|delivered)\b",
+        r"\b(finished|completed|complete|done|submitted|delivered|sent)\s+(the|it|this|that|my|our)\b",
         r"\bwork\s+is\s+(done|complete|finished)\b",
-        r"\breport\s+is\s+(ready|done|complete|finished|submitted)\b",
-        r"\b(task|assignment|job)\s+is\s+(done|complete|finished)\b",
-        r"\blet.{0,15}know.{0,30}(done|finished|completed|submitted)\b",
-        r"\binform(ing|ed)?.{0,20}(done|finished|completed|submitted|complete)\b",
+        r"\breport\s+(is|was)\s+(ready|done|complete|finished|submitted)\b",
+        r"\b(task|assignment|job)\s+(is|was)\s+(done|complete|finished)\b",
+        r"\blet.{0,15}know.{0,30}(done|finished|completed|complete|submitted)\b",
+        r"\binform(ing|ed)?.{0,20}(done|finished|completed|complete|submitted)\b",
+        r"\bgetting.{0,10}done\b",
+        r"\bgot.{0,10}done\b",
     ]
 ]
 
@@ -66,7 +68,7 @@ def _topic_matches(signal_text: str, commitment_text: str) -> float:
     kw_commit = _extract_keywords(commitment_text)
     
     if kw_signal and kw_commit:
-        overlap = len(kw_signal & kw_commit) / max(len(kw_signal), len(kw_commit))
+        overlap = len(kw_signal & kw_commit) / len(kw_commit)
     else:
         overlap = 0.0
     
@@ -100,8 +102,9 @@ def detect_completions(
         raw_speaker = seg.get("speaker", "")
         speaker_name = resolved_speaker_map.get(raw_speaker, raw_speaker)
         
-        # Gather context (last 3 segments + current) to resolve pronouns and implicit subjects
-        context_segments = segments[max(0, i-3):i+1]
+        # Gather context (last 15 segments + current) to resolve pronouns and implicit subjects
+        # A conversation about a topic can easily span 15-20 short sentences before the "it's done"
+        context_segments = segments[max(0, i-15):i+1]
         context_text = " ".join(s.get("text", "") for s in context_segments if s.get("text"))
         
         # Try to match against open commitments

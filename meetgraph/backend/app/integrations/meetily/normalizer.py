@@ -6,7 +6,8 @@ from app.models.ingestion.transcript import Transcript, TranscriptSegment
 SELF_INTRO = re.compile(r"\b(?i:i am|i'm|this is|my name is|it'?s|hi i am|hey i am)\s+([A-Z][a-z]{2,})\b")
 GREET_INTRO = re.compile(r"\b(?i:hi|hello|hey|thanks|thank you|welcome|good morning|good afternoon),?\s+([A-Z][a-z]{2,})\b")
 ADDRESSED = re.compile(r"\b([A-Z][a-z]{2,})[,!]\s")
-COMMON = {"Yes", "Yeah", "Sure", "Okay", "Thanks", "Thank", "Sorry", "Please", "Good", "Hello", "Hi", "Hey", "Welcome"}
+END_ADDRESS = re.compile(r",\s*([A-Z][a-z]{2,})[.!?]")
+COMMON = {"Yes", "Yeah", "Sure", "Okay", "Thanks", "Thank", "Sorry", "Please", "Good", "Hello", "Hi", "Hey", "Welcome", "Perfect", "Excellent"}
 
 def _extract_names_from_text(segments: List[Dict[str, Any]]) -> Dict[str, str]:
     """
@@ -58,7 +59,8 @@ def _extract_names_from_text(segments: List[Dict[str, Any]]) -> Dict[str, str]:
             # Check next utterance belongs to someone we can potentially link
             greet_hits = GREET_INTRO.findall(text)
             addr_hits = [h for h in ADDRESSED.findall(text) if h not in COMMON]
-            candidates = [h for h in (greet_hits + addr_hits) if h not in COMMON]
+            end_hits = [h for h in END_ADDRESS.findall(text) if h not in COMMON]
+            candidates = [h for h in (greet_hits + addr_hits + end_hits) if h not in COMMON]
             if candidates:
                 # If the very next segment is from a different speaker, that speaker IS the person being addressed
                 if i + 1 < len(ordered):
