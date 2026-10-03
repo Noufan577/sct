@@ -20,6 +20,7 @@ def _to_evidence(item: dict) -> TimelineItemResponse:
     ev = item.get("evidence") or {}
     return TimelineItemResponse(
         commitment_id=item.get("commitment_id"),
+        person=item.get("person") or "Unknown",
         commitment=item.get("commitment"),
         deadline=item.get("deadline"),
         status=item.get("status"),

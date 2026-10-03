@@ -844,11 +844,14 @@ async function loadIdentities() {
           ${i.confirmed ? t("confirmed") : i.confidence > 0.7 ? t("conf_high") : i.confidence > 0.3 ? t("conf_med") : t("conf_low")}
         </span>
         <div>
-          <b>${i.speaker_label}</b> → ${i.person_name}
+          <b>${i.speaker_label}</b> → <span id="id-name-${i.id}">${i.person_name}</span>
           <span class="meta"> · ${i.method || "unknown"} · conf: ${(i.confidence * 100).toFixed(0)}%</span>
           ${i.evidence_text ? `<div class="evidence hidden" data-ev>"${i.evidence_text}"</div>` : ""}
-          ${!i.confirmed ? `<button class="link" onclick="confirmIdentity(${i.id}, '${i.person_name}')">✓ ${t("confirm")}</button>
-          <button class="link" onclick="editNameInline(${i.id}, this)" style="color:var(--muted)">✎ ${t("edit_name")}</button>` : `<span class="meta"> ✓ ${t("confirmed")}</span>`}
+          ${!i.confirmed ?
+            `<button class="link" onclick="confirmIdentity(${i.id}, '${i.person_name}')">✓ ${t("confirm")}</button>
+            <button class="link" onclick="editNameInline(${i.id}, this)" style="color:var(--muted)">✎ ${t("edit_name")}</button>
+            ${i.confidence < 0.7 ? `<button class="link" onclick="suggestName(${i.id}, this)" style="color:var(--accent)">🔍 Suggest Name</button>` : ""}`
+            : `<span class="meta"> ✓ ${t("confirmed")}</span>`}
         </div>
       </div>`
     ).join("");
@@ -860,8 +863,47 @@ async function confirmIdentity(id, name) {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({person_name: name})
     });
-    loadIdentities(); loadTimeline();
+    // Reload all views that show names
+    loadIdentities();
+    loadTimeline();
+    loadStats();
+    loadGraph();
   } catch(e) { alert("Error: " + e.message); }
+}
+
+async function suggestName(id, btn) {
+  const origText = btn.innerText;
+  btn.disabled = true;
+  btn.innerText = "🔍 Asking Ollama...";
+  try {
+    const r = await api(`/api/identities/${id}/suggest`, {method: "POST"});
+    if (r.suggested_name) {
+      // Pre-fill the name into an inline input so user can confirm or edit
+      const nameSpan = document.getElementById(`id-name-${id}`);
+      if (nameSpan) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = r.suggested_name;
+        input.title = r.reason || "";
+        input.style = "width:110px; padding:2px 5px; font-size:12px; border-radius:4px; border:1px solid var(--border);";
+        nameSpan.replaceWith(input);
+        input.focus();
+        // Replace suggest btn with confirm btn
+        btn.innerText = "✓ Confirm";
+        btn.disabled = false;
+        btn.onclick = async () => {
+          await confirmIdentity(id, input.value.trim() || r.suggested_name);
+        };
+      }
+    } else {
+      btn.innerText = "Name unknown";
+      btn.title = r.reason || "";
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerText = origText;
+    alert("Suggest failed: " + e.message);
+  }
 }
 function editNameInline(id, btn) {
   const input = document.createElement("input");

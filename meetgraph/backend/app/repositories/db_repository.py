@@ -338,6 +338,34 @@ class DBRepository:
                 mapping[r.speaker_label] = r.person_name
         return mapping
 
+    def get_confirmed_person_names(self) -> set:
+        """Return the set of all person names that have ever been confirmed globally.
+        Used for cross-meeting merging: if a new meeting resolves a speaker to a name
+        that matches a previously confirmed person, we treat them as the same node.
+        """
+        from app.db.models import SpeakerIdentityModel  # noqa
+
+        rows = (
+            self.db.query(SpeakerIdentityModel.person_name)
+            .filter(SpeakerIdentityModel.confirmed == 1)
+            .distinct()
+            .all()
+        )
+        return {r.person_name for r in rows if r.person_name}
+
+    def get_open_commitments(self, exclude_meeting_id: Optional[str] = None) -> List:
+        """Return all commitments that are not yet DONE/COMPLETED.
+        Optionally exclude commitments from the current meeting being processed.
+        Used by the completion detector to find what to auto-resolve."""
+        q = (
+            self.db.query(CommitmentModel)
+            .join(MeetingModel, CommitmentModel.meeting_id == MeetingModel.id)
+            .filter(CommitmentModel.status.notin_(["DONE", "COMPLETED"]))
+        )
+        if exclude_meeting_id:
+            q = q.filter(MeetingModel.meetily_id != exclude_meeting_id)
+        return q.all()
+
     def save_speaker_identities(self, meetily_id: str, mapping: Dict[str, Dict[str, Any]]) -> List:
         """Upsert resolver output. Confirmed rows are never overwritten."""
         from app.db.models import SpeakerIdentityModel  # noqa
@@ -383,7 +411,9 @@ class DBRepository:
         return q.all()
 
     def confirm_speaker_identity(self, identity_id: int, person_name: str) -> Optional[object]:
-        """Manual confirmation: set confirmed=1 and propagate globally."""
+        """Manual confirmation: set confirmed=1, propagate globally to all speaker
+        identity rows AND retroactively rewrite all commitments that still reference
+        the old label so the graph/timeline immediately show the correct name."""
         from app.db.models import SpeakerIdentityModel  # noqa
 
         row = (
@@ -393,19 +423,59 @@ class DBRepository:
         )
         if not row:
             return None
+
+        old_label = row.speaker_label   # e.g. "Speaker 20" or "20"
+        old_name  = row.person_name     # e.g. "Speaker 20" (unresolved)
+
         row.person_name = person_name
-        row.confirmed = 1
-        row.method = "manual_confirm"
+        row.confirmed   = 1
+        row.method      = "manual_confirm"
+
+        # 1. Propagate to all other identity rows with same speaker_label
         others = (
             self.db.query(SpeakerIdentityModel)
-            .filter(SpeakerIdentityModel.speaker_label == row.speaker_label)
+            .filter(SpeakerIdentityModel.speaker_label == old_label)
             .all()
         )
         for o in others:
-            if o.confirmed == 0 and o.person_name != person_name:
-                o.person_name = person_name
-                o.confidence = max(o.confidence, 0.9)
-                o.method = "confirmed_reuse"
+            if o.id == identity_id:
+                continue
+            o.person_name = person_name
+            o.confidence  = max(o.confidence or 0.0, 0.9)
+            o.method      = "confirmed_reuse"
+            o.confirmed   = 1
+
+        # 2. Retroactively rewrite commitments where person OR evidence_speaker
+        #    still holds the old label or old unresolved name.
+        labels_to_replace = {old_label, old_name}
+        if old_label.startswith("Speaker "):
+            # e.g. "Speaker 20" -> also match raw "20"
+            labels_to_replace.add(old_label.split(" ", 1)[1])
+        else:
+            # numeric string -> also match "Speaker {N}"
+            labels_to_replace.add(f"Speaker {old_label}")
+
+        commitments_updated = 0
+        for lbl in labels_to_replace:
+            rows_p = (
+                self.db.query(CommitmentModel)
+                .filter(CommitmentModel.person == lbl)
+                .all()
+            )
+            for c in rows_p:
+                c.person = person_name
+                c.updated_at = _now()
+                commitments_updated += 1
+
+            rows_e = (
+                self.db.query(CommitmentModel)
+                .filter(CommitmentModel.evidence_speaker == lbl)
+                .all()
+            )
+            for c in rows_e:
+                c.evidence_speaker = person_name
+                commitments_updated += 1
+
         self.db.commit()
         self.db.refresh(row)
         return row
